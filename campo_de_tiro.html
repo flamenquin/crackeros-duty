@@ -243,7 +243,13 @@ const CAMOS=[
  {name:'Ártico',req:'1000 dianas destruidas',ok:()=>S.stat.kills>=1000},
  {name:'Fibra de carbono',req:'Ten 6 armas',ok:()=>Object.keys(S.own).length>=6},
  {name:'Oro mate',req:'500 aciertos en el centro',ok:()=>S.stat.bulls>=500},
- {name:'Damasco',req:'Una licencia con honores',ok:()=>S.prestiges>=1}];
+ {name:'Damasco',req:'Una licencia con honores',ok:()=>S.prestiges>=1},
+ {name:'Azul bosque',req:'25 enemigos eliminados en combate',ok:()=>S.stat.bots>=25},
+ {name:'Rojo bosque',req:'5 enemigos pesados eliminados',ok:()=>S.stat.heavies>=5},
+ {name:'Otoño',req:'5 oleadas de supervivencia despejadas',ok:()=>S.stat.waves>=5},
+ {name:'Digital verde',req:'250 blancos móviles destruidos',ok:()=>S.stat.moving>=250},
+ {name:'Ghost',req:'Completa la misión de la mansión',ok:()=>S.stat.missions>=1},
+ {name:'Tormenta',req:'Gana una partida de Contra todos',ok:()=>S.stat.ffaWins>=1}];
 const PAS=[{id:'ammo',name:'Patrocinio de munición',pct:2,base:2},{id:'class',name:'Clases de tiro para reclutas',pct:2,base:3},
  {id:'sec',name:'Contrato de seguridad privada',pct:3,base:4},{id:'lic',name:'Licencia de fabricación',pct:3,base:6}];
 const PAS_MAX=5,PRESTIGE_MIN=1e6;
@@ -730,7 +736,14 @@ const camoTex=[null,
  ctex(128,(g,s)=>{g.fillStyle='#e4e7e6';g.fillRect(0,0,s,s);for(let i=0;i<30;i++){g.fillStyle=['#b9c0c4','#8c979d','#f5f6f5'][i%3];g.beginPath();g.ellipse(rnd()*s,rnd()*s,8+rnd()*18,4+rnd()*9,rnd()*3,0,7);g.fill()}},2),
  ctex(64,(g,s)=>{g.fillStyle='#1a1b1d';g.fillRect(0,0,s,s);for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=(x+y)%2?'#2b2d31':'#111214';g.fillRect(x*8,y*8,8,8);g.fillStyle='#ffffff10';g.fillRect(x*8,y*8,(x+y)%2?8:2,(x+y)%2?2:8)}},6),
  ctex(64,(g,s)=>{g.fillStyle='#a8873a';g.fillRect(0,0,s,s);speck(g,s,500,44,45,36,52,2)},2),
- ctex(128,(g,s)=>{g.fillStyle='#6d7276';g.fillRect(0,0,s,s);g.lineWidth=2;for(let i=0;i<40;i++){g.strokeStyle=i%2?'#9aa0a4':'#3f4346';g.beginPath();const y=i*4;g.moveTo(0,y);for(let x=0;x<=s;x+=16)g.lineTo(x,y+Math.sin(x*.08+i*.7)*7);g.stroke()}},2)];
+ ctex(128,(g,s)=>{g.fillStyle='#6d7276';g.fillRect(0,0,s,s);g.lineWidth=2;for(let i=0;i<40;i++){g.strokeStyle=i%2?'#9aa0a4':'#3f4346';g.beginPath();const y=i*4;g.moveTo(0,y);for(let x=0;x<=s;x+=16)g.lineTo(x,y+Math.sin(x*.08+i*.7)*7);g.stroke()}},2),
+ ...[['#2f4a66',['#1c2f44','#4a6a8a','#12202e','#6f8fa8']],['#6a2a24',['#3d1512','#8f4a3a','#1f0d0b','#a8685a']],['#8a5a22',['#5a3414','#b8842e','#3a2412','#c9a04a','#6a3a1a']]].map(q=>
+   ctex(128,(g,s)=>{g.fillStyle=q[0];g.fillRect(0,0,s,s);for(let i=0;i<42;i++){g.fillStyle=q[1][i%q[1].length];g.beginPath();g.ellipse(rnd()*s,rnd()*s,8+rnd()*20,5+rnd()*11,rnd()*3,0,7);g.fill()}},2)),
+ ctex(128,(g,s)=>{g.fillStyle='#55633a';g.fillRect(0,0,s,s);for(let i=0;i<420;i++){g.fillStyle=['#3d4a2c','#6b7a44','#1f2616','#55633a'][Math.floor(rnd()*4)];const w=8*(1+Math.floor(rnd()*3));g.fillRect(Math.floor(rnd()*16)*8,Math.floor(rnd()*16)*8,w,8)}},2),
+ ctex(128,(g,s)=>{g.fillStyle='#d9dcdc';g.fillRect(0,0,s,s);for(let i=0;i<22;i++){g.fillStyle=['#9aa0a2','#f2f4f4','#b9bec0'][i%3];g.beginPath();g.ellipse(rnd()*s,rnd()*s,10+rnd()*22,5+rnd()*10,rnd()*3,0,7);g.fill()}
+   g.fillStyle='#22252a';for(let i=0;i<9;i++){const x=rnd()*s,y=rnd()*s,a=rnd()*6;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*34,y+Math.sin(a)*34);g.lineTo(x+Math.cos(a+.5)*16,y+Math.sin(a+.5)*16);g.lineTo(x+Math.cos(a+1.1)*22,y+Math.sin(a+1.1)*22);g.fill()}},2),
+ ctex(128,(g,s)=>{g.fillStyle='#3a4048';g.fillRect(0,0,s,s);for(let i=0;i<34;i++){g.fillStyle=['#22262c','#565e68','#14161a'][i%3];g.beginPath();g.ellipse(rnd()*s,rnd()*s,10+rnd()*24,5+rnd()*12,rnd()*3,0,7);g.fill()}
+   g.strokeStyle='#aab4c0';g.lineWidth=1.5;for(let i=0;i<5;i++){let x=rnd()*s,y=0;g.beginPath();g.moveTo(x,y);while(y<s){x+=(rnd()-.5)*26;y+=10+rnd()*16;g.lineTo(x,y)}g.stroke()}},2)];
 const baseCol=[0x2a2c2b,0x7a7d7c,0x23261f,0x33373c,0x4a3626,0x1f231c,0x4f4a3a,0x22261f,0x2a3320,0x2d2d2d,0x363c2b,0x48553a,0x30353a,0x2c3029,0x3a4033];
 // arma en mano
 let gun=null,gunKey='',muzzle=null,mflash=null,scopeOn=false;
