@@ -419,7 +419,7 @@ const shotDmg=()=>area===4?(IMW[S.weapon]||{dmg:20}).dmg:area===2||area===3?22*M
 const calCost=()=>4*Math.pow(1.6,S.cal);
 const moneyMult=()=>medalMult()*(1+rank()*.05)*(1+L('bounty')*.1)*(B.dbl>0?2:1);
 const magSize=()=>Math.max(1,Math.round(W().mag*(1+L('mag')*.2)*(hasAtt('mag')?1.4:1)));
-const reloadTime=()=>W().reload*Math.pow(.9,L('reload'));
+const reloadTime=()=>W().reload*Math.pow(.9,L('reload'))*(area===4?RLD[hk('reload')]:1);
 const cleanTime=()=>6*Math.pow(.8,L('kit'));
 const racks=()=>6-L('hands');
 // dianas: suciedad y encasquillamiento · supervivencia e historia: solo encasquillamiento · contra todos: ninguno
@@ -449,7 +449,7 @@ const houseOpen=()=>S.dev||level()>=3;
 const zone=()=>area>=2?2:area===1?(pz<-1?2:-1):pz<3.5?0:pz>11.75?1:-1;
 const inRange=()=>zone()>=0;
 const eyeH=()=>1.66-crouch*.62+jy;   // altura de los ojos: de pie, agachado o en el aire
-function jump(){if(state!=='play'||jy>0)return;if(crouch>.5){if(S.crT||lastDev==='touch'){kb.crouch=false;padCr=false}return}vy=4.7;jy=.001;sfx.step()}
+function jump(){if(state!=='play'||jy>0)return;if(crouch>.5){if(S.crT||lastDev==='touch'){kb.crouch=false;padCr=false}return}vy=4.7*(area===4?JMP[hk('jump')]:1);jy=.001;sfx.step()}
 const wUnlocked=i=>{const w=WEAPONS[i];for(let k=i-1;k>=0;k--)if(WEAPONS[k].ck===w.ck)return !!S.own[k];return true};
 const gk=()=>S.weapon+'/'+S.camo+'/'+Object.keys(S.att[S.weapon]||{}).join('');
 function earn(m){S.money+=m;S.runEarned+=m;S.totalEarned+=m}
@@ -1243,9 +1243,9 @@ function pickTarget(b){let best=null,bd=2500;if((area===2&&ffa.endT>0)||(area===
   if(area>=2)for(const o of bots){if(o===b||o.st!==1||o.team===b.team||asleep(o))continue;const d=(o.x-b.x)*(o.x-b.x)+(o.z-b.z)*(o.z-b.z);if(d<bd&&Math.abs(o.y-b.y)<2.5&&!segBlocked(b.x,b.z,o.x,o.z)){bd=d;best=o}}
   b.tg=best}
 function botFire(b,d,mvd){
-  const p=(area===4?Math.max(.14,Math.min(imc().acc,imc().acc+.06-d*.009)):area===2?Math.max(.22,Math.min(.72,.78-d*.009)):Math.max(.14,Math.min(.6,.63-d*.009)))*(moving>.5?.7:1)*(mvd?.8:1)*(crouch>.5?.65:1)*(jy>0?.8:1)*(sprint>.5?.75:1)*(dark>.5&&!b.nvg?.8:1),hit=rnd()<p;
+  const p=(area===4?Math.max(.14,Math.min(imc().acc,imc().acc+.06-d*.009)):area===2?Math.max(.22,Math.min(.72,.78-d*.009)):Math.max(.14,Math.min(.6,.63-d*.009)))*(moving>.5?.7:1)*(mvd?.8:1)*(crouch>.5?.65:1)*(jy>0?.8:1)*(sprint>.5?.75:1)*(dark>.5&&!b.nvg?.8:1)*(area===4?JAMM[hk('jam')]:1),hit=rnd()<p;
   if(FX){v3.set(b.x,b.y+1.35*(b.type?1.25:1),b.z);const sx=hit?0:(rnd()<.5?-1:1)*(.5+rnd()),nx=-(pz-b.z)/d,nz=(px-b.x)/d;v2.set(px+nx*sx,pgy+(hit?1.3:1.2+rnd()*.8),pz+nz*sx);tracer(v3,v2);sfx.botShot(d)}
-  if(hit){php-=area===4?imc().dmg*dmgTaken():area===2?25:area===3?(b.type?18:11):(b.type?14:8)*(area===1?1+.05*(S.wave-1):1)*dmgTaken();lastHit=0;hurtT=.35;sfx.hurt();rumble(.7,.4,140);if(php<=0)playerDown(b)}
+  if(hit){php-=area===4?imHit(imc().dmg*dmgTaken()):area===2?25:area===3?(b.type?18:11):(b.type?14:8)*(area===1?1+.05*(S.wave-1):1)*dmgTaken();lastHit=0;hurtT=.35;sfx.hurt();rumble(.7,.4,140);if(php<=0)playerDown(b)}
 }
 function botShoot(b,T,d,mvd){
   if(T===PL){botFire(b,d,mvd);return}
@@ -1298,7 +1298,7 @@ function rayBot(d,o,list,ig){let best=null,bt=1e9,bh=false;const tc=ig?1e9:rayCo
     if(t<tc){if(list)list.push([b,hd,t]);if(t<bt){bt=t;best=b;bh=hd}}}
   return best?[best,bt,bh]:null}
 function damageBot(b,d,head,mul){
-  if(b.st!==1)return 0;if(hk('allhs'))head=true;const eff=((area===4&&head)?b.max*(IMW[S.weapon]||{hf:.34}).hf:d*(head?bull():1))*(mul||1)-b.armor;
+  if(b.st!==1)return 0;if(hk('allhs'))head=true;const eff=((area===4&&head)?b.max*(IMW[S.weapon]||{hf:.34}).hf:d*(head?bull():1)*(area===4?DMG[hk('dmg')]:1))*(mul||1)-b.armor;
   if(eff<=0){if(FX){sfx.rico();pop('sin penetración','#aab0a6')}tip('rico','Blindaje demasiado duro','Sube el calibre en el banco de trabajo, apunta a la cabeza o consigue un arma más potente');return 1}
   b.hp-=eff;b.react=Math.min(b.react,.15);b.hold=false;if(head)S.stat.bulls++;if(FX){sfx.hit(0);burst(b.x,b.y+(head?1.7:1.2),b.z,head?7:4,head?0xb04030:0x6f5f40,3)}
   if(b.hp<=0&&area===4){if(FX){sfx.tick();hitT=.22;$('#hitm').className='kill'}killBot(b,PL,head);return 2}
@@ -1387,11 +1387,21 @@ const IM_HACKS=[
  {id:'bang',n:'Balas perforantes',max:1,cost:[45000],req:['wall',1],tier:2,fx:['Las balas atraviesan paredes y enemigos; lo que aciertan tras una pared recibe ×4 de daño']},
  {id:'aim',n:'Aimbot',max:2,cost:[20000,60000],req:['wall',1],tier:2,fx:['La mira se pega al cuerpo de los enemigos cercanos','Aimbot total: se clava en la cabeza de cualquiera que veas']},
  {id:'god',n:'Modo dios',max:3,cost:[6000,20000,50000],req:['hsm',2],tier:2,fx:['Daño recibido −20 %','Daño recibido −40 %','Daño recibido −60 %']},
+
+ {id:'dmg',n:'Daño aumentado',max:3,cost:[8000,40000,200000],req:['hb',1],tier:1,fx:['Daño al cuerpo ×1,5','Daño al cuerpo ×2','Daño al cuerpo ×3']},
+ {id:'rapid',n:'Cadencia de tiro',max:3,cost:[10000,50000,250000],req:['norec',1],tier:2,fx:['Cadencia +25 %','Cadencia +50 %','Cadencia +100 %']},
+ {id:'reload',n:'Recarga relámpago',max:2,cost:[6000,45000],req:['norec',1],tier:2,fx:['Recargas el doble de rápido','Recarga casi instantánea']},
+ {id:'jump',n:'Supersalto',max:2,cost:[3000,15000],req:['speed',1],tier:3,fx:['Saltas un 50 % más alto','Saltas más del doble de alto']},
+ {id:'regen',n:'Nanobots',max:3,cost:[5000,25000,120000],req:['god',1],tier:3,fx:['Regeneras tras 1 s sin daño, ×3 más rápido','Regeneración ×6','Regeneración ×12']},
+ {id:'vamp',n:'Vampirismo',max:3,cost:[12000,60000,300000],req:['god',1],tier:3,fx:['Cada baja te cura 25','Cada baja te cura 50','Cada baja te cura del todo']},
+ {id:'shield',n:'Escudo de energía',max:3,cost:[10000,50000,250000],req:['god',2],tier:3,fx:['Escudo de 50 puntos en cada vida','Escudo de 100 puntos','Escudo de 200 puntos']},
+ {id:'jam',n:'Inhibidor de puntería',max:3,cost:[15000,70000,350000],req:['wall',1],tier:2,fx:['Los enemigos aciertan un 25 % menos','Los enemigos aciertan un 45 % menos','Los enemigos aciertan un 65 % menos']},
+ {id:'time',n:'Reloj hackeado',max:3,cost:[6000,30000,150000],req:['cash',1],tier:2,fx:['+5 s en las partidas por tiempo y para plantar','+10 s','+20 s']},
  {id:'trig',n:'Triggerbot',max:1,cost:[35000],req:['aim',1],tier:3,fx:['Dispara solo en cuanto tienes a un enemigo en la mira']}];
 // racha: bajas seguidas sin morir → multiplicador de dinero (el hack «Racha de dinero» multiplica el bonus)
 // tramos de la racha: [bajas seguidas, multiplicador]. De base valen los 3 primeros; cada nivel del hack «Racha de dinero» desbloquea el siguiente
 const IM_STREAK=[[2,1.25],[3,1.5],[4,2],[5,2.5],[8,3],[10,4],[15,5],[20,6]],imStreakMult=()=>{const n=3+hk('streak');let m=1;for(let i=0;i<n&&i<IM_STREAK.length;i++)if(im.ks>=IM_STREAK[i][0])m=IM_STREAK[i][1];return m};
-const BANG_MUL=4,HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
+const JMP=[1,1.5,2.2],RAPID=[1,1.25,1.5,2],RLD=[1,.5,.1],DMG=[1,1.5,2,3],REG=[1,3,6,12],SHD=[0,50,100,200],JAMM=[1,.75,.55,.35],TIMEX=[0,5,10,20],BANG_MUL=4,HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
 // pagos base y dificultad de los bots por modo
 const IM_PAY={duel:{kill:25,hs:15,win:200},sd:{kill:50,hs:30,plant:100,rwin:100,win:300},ffa:{kill:40,hs:25,place:[400,250,120,40]}};
 const IM_TIME={duel:15,ffa:45},IM_SD_TIME=30,IM_DEAD=1,IM_RESPAWN=1;   // segundos: partida de 1 vs 1 · partida de contra todos · tiempo para plantar en cada ronda de S&D · muerte del jugador (animación y reaparición) · reaparición de los bots
@@ -1400,7 +1410,7 @@ const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12
 // cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
 const imOwned=()=>IM_WEAPONS.filter(q=>S.own[q.wi]).length,imMult=()=>1+.25*Math.max(0,imOwned()-1);
 // dificultad suave: crece con las armas y los hacks que tengas; los bots nunca pasan de ~60 % más vida ni de +10 puntos de puntería
-const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/(IM_WEAPONS.length-1)*.6+Math.min(h,22)/22*.4)};
+const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/(IM_WEAPONS.length-1)*.6+Math.min(h,40)/40*.4)};
 const imc=()=>{const c=IMC[im.mode]||IMC.duel,d=imDiff();return{hp:Math.round(c.hp*(1+.6*d)),dmg:c.dmg*(1+.2*d),acc:Math.min(.88,c.acc+.1*d),react:c.react*(1-.3*d),fire:[c.fire[0]*(1-.2*d),c.fire[1]*(1-.2*d)]}};
 // nivel activo de un hack (solo cuenta dentro de una partida del modo incremental)
 const hkl=id=>S.inc&&S.inc.hk[id]&&!S.inc.off[id]?S.inc.hk[id]:0,hk=id=>area===4?hkl(id):0;
@@ -1422,9 +1432,13 @@ const imPick=mode=>{const l=IM_MAPS[mode],i=(S.inc.map||{})[mode];return l[i>=0&
 function imPlace(x,z,yw){px=x;pz=z;yaw=yw;pitch=0;pgy=0;jy=0;vy=0;kick=0}
 // el fondo del lobby: la arena elegida, vista desde fuera
 function imPreview(){const I=S.inc,l=IM_MAPS[I.mode],i=(I.map||{})[I.mode];area=4;imMapSet(l[i>=0&&i<l.length?i:0]);clearBots();im.on=false;const s=imMap.spawns[0];imPlace(s[0],s[1],imYawC(s[0],s[1]));php=maxHp();pInv=0;gst='ready';S.ammo=magSize()}
+// escudo de energía: absorbe el daño antes que la vida y se recarga al reaparecer
+let imShield=0;
+function imFull(){php=maxHp();imShield=SHD[hk('shield')]}
+function imHit(x){if(imShield>0){const a=Math.min(imShield,x);imShield-=a;x-=a}return x}
 function imPay(m,why){m=Math.round(m*CSH[hk('cash')]*imMult()*imStreakMult());S.money+=m;im.gain+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
-function imReady(t){php=maxHp();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=t||3;im.cnt=4}
-function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*1.6,P=m.spawns[0],E=m.spawns[1],a=P[0]+j(),b=P[1]+j(),c=E[0]+j(),d=E[1]+j();imPlace(a,b,imYawC(a,b));mkBot({team:1,x:c,z:d,rot:imYawC(c,d),name:'Rival'});if(fast){php=maxHp();S.ammo=magSize();gst='ready';pInv=1}else imReady(3)}
+function imReady(t){imFull();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=t||3;im.cnt=4}
+function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*1.6,P=m.spawns[0],E=m.spawns[1],a=P[0]+j(),b=P[1]+j(),c=E[0]+j(),d=E[1]+j();imPlace(a,b,imYawC(a,b));mkBot({team:1,x:c,z:d,rot:imYawC(c,d),name:'Rival'});if(fast){imFull();S.ammo=magSize();gst='ready';pInv=1}else imReady(3)}
 // el rival nuevo sale en el extremo más lejano de ti
 function imRival(){const c=imMap.spawns.slice(0,2).sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz))[0];let x=c[0],z=c[1];for(let k=0;k<12;k++){const tx=c[0]+(rnd()-.5)*1.6;if(botOk(tx,c[1])){x=tx;break}}mkBot({team:1,x,z,rot:imYawC(x,z),name:'Rival'}).react=.4}
 function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;im.bx=m.cx+m.site[0];im.bz=m.Z+m.site[1];imPlace(m.spawns[0][0],m.spawns[0][1],Math.atan2(-(im.bx-m.spawns[0][0]),-(im.bz-m.spawns[0][1])));for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});imBombM.visible=false;imReady()}
@@ -1434,7 +1448,7 @@ function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spaw
 function imStart(){const I=S.inc;if(!I.um[I.mode])return;const q=IM_WEAPONS[I.wsel];
   area=4;imMapSet(imPick(I.mode));clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
   S.alt=IM_WEAPONS.map(w=>w.wi).filter(w=>S.own[w]&&w!==S.weapon).pop()||S.weapon;
-  deadT=0;imDeathClear();Object.assign(im,{on:true,ks:0,spawnQ:[],mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:IM_TIME[I.mode]||0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
+  deadT=0;imDeathClear();Object.assign(im,{on:true,ks:0,spawnQ:[],mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:(IM_TIME[I.mode]||0)+(I.mode==='sd'?0:TIMEX[hk('time')]),fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
   if(I.mode==='duel')imRound();else if(I.mode==='sd')imSdSetup();else imFfaSetup();
   startPlay();hud();note('Mapa: '+imMap.name);banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'45 segundos · gana quien tenga más bajas')}
 function imToLobby(){incSave();state='pause';wipeWorld();imPreview();hud();incLobby()}
@@ -1455,14 +1469,14 @@ function imSdEnd(win,why){if(im.state!=='play')return;im.sc[win?0:1]++;if(win)im
   im.state='between';im.t=4;im.round++;for(const b of bots)b.tg=null;note(win?'Ronda ganada':'Ronda perdida',`${why} · rondas ${im.sc[0]} – ${im.sc[1]}`)}
 function imScore(k,v){if(im.state!=='play'||im.mode!=='ffa')return;im.fsc[k].k++;im.fsc[v].d++}
 function imKill(k,v,head){if(!im.on||im.state!=='play')return;const P=IM_PAY[im.mode],I=S.inc;
-  if(k===PL){I.st.kills++;const pm=imStreakMult();im.ks++;const sm=imStreakMult();if(sm>pm&&FX)note('Racha de '+im.ks+' bajas','Dinero ×'+sm.toFixed(2));let m=P.kill;if(head){I.st.hs++;m+=P.hs*HSM[hk('hsm')]}imPay(m,head?'headshot':'')}
+  if(k===PL){I.st.kills++;{const v=[0,25,50,1e4][hk('vamp')];if(v)php=Math.min(maxHp(),php+v)}const pm=imStreakMult();im.ks++;const sm=imStreakMult();if(sm>pm&&FX)note('Racha de '+im.ks+' bajas','Dinero ×'+sm.toFixed(2));let m=P.kill;if(head){I.st.hs++;m+=P.hs*HSM[hk('hsm')]}imPay(m,head?'headshot':'')}
   if(im.mode==='duel')imDuelKill(k===PL);
   else if(im.mode==='sd'){if(k===PL&&!bots.some(b=>b.st===1))imSdEnd(true,'Los cinco abatidos')}
   else{imScore(k===PL?0:k.id,v.id);im.spawnQ.push({t:IM_RESPAWN,id:v.id})}}
 function imPlayerDown(b){if(!im.on||im.state!=='play'||deadT>0)return;im.ks=0;if(FX){sfx.down();$('#fade').animate([{opacity:1,background:'#400'},{opacity:0}],{duration:900})}
   deathStart(()=>{if(im.on&&im.state==='play')imRespawn()},IM_DEAD);
   if(im.mode==='duel')imDuelKill(false);else if(im.mode==='sd')imSdEnd(false,'Has caído');else imScore(b.id,0)}
-function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);imPlace(q[0],q[1],imYawC(q[0],q[1]));php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
+function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);imPlace(q[0],q[1],imYawC(q[0],q[1]));imFull();pInv=2;gst='ready';S.ammo=magSize()}}
 // muerte (todos los modos): viendo caer a tu personaje en tercera persona; al acabar se ejecuta cb (reaparecer, fin de misión…)
 let deadT=0,deadDur=1,deadCb=null,imDeath=null;
 function deathStart(cb,dur){imDeathClear();deadDur=dur||1.5;deadT=deadDur;deadCb=cb||null;kb.fire=false;kb.ads=false;gst='ready';const o=botObj('soldier');
@@ -1478,7 +1492,7 @@ function imPlant(){const s=im.sd;if(!im.on||im.mode!=='sd'||im.state!=='play'||s
 function imSdTick(dt){const s=im.sd;
   if(s.plantT>0){if(Math.hypot(px-im.bx,pz-im.bz)>2.6){s.plantT=0;note('Plantado cancelado','Quédate junto al objetivo mientras colocas la bomba')}
     else{s.plantT+=dt;if(s.plantT>=2.5){s.plantT=0;s.st=1;s.fuse=30;s.defT=0;S.inc.st.plants++;imBombM.visible=true;imPay(IM_PAY.sd.plant,'bomba plantada');for(const b of bots){b.hold=false;b.home=false}if(FX)sfx.radio();note('Bomba plantada','Defiéndela 30 s. Si la desactivan, pierdes')}}}
-  else if(s.st===0&&im.clock>=IM_SD_TIME){imSdEnd(false,'Se acabó el tiempo');return}
+  else if(s.st===0&&im.clock>=IM_SD_TIME+TIMEX[hk('time')]){imSdEnd(false,'Se acabó el tiempo');return}
   if(s.st===1&&im.state==='play'){s.fuse-=dt;let near=false;for(const b of bots)if(b.st===1&&Math.hypot(b.x-im.bx,b.z-im.bz)<1.8)near=true;s.defT=near?s.defT+dt:Math.max(0,s.defT-dt*2);
     const q=Math.ceil(s.fuse*(s.fuse<10?2:1));if(q!==s.beep){s.beep=q;if(FX)tone(1800,1800,.05,'square',.07)}
     if(s.fuse<=0){if(FX){sfx.boom();flashFx();boomM.position.set(im.bx,.8,im.bz);boomM.userData.t=.25;boomM.userData.r=5;boomM.visible=true;burst(im.bx,.8,im.bz,30,0x8a6a4a,9)}imBombM.visible=false;imSdEnd(true,'La bomba ha detonado')}
@@ -1505,7 +1519,7 @@ function imRender(dt){const s=im.sd;if(imBombM.visible){imBombL.visible=Math.sin
 const imHack=()=>IM_HACKS.filter(h=>hkl(h.id)).map(h=>h.n+(h.max>1?' '+hkl(h.id):'')).join(' · ');
 function imObj(){if(!im.on)return '';if(im.state==='count')return (im.mode==='sd'?'Ronda '+im.round+'/3 · ':'')+'Empieza en '+Math.max(1,Math.ceil(im.t));
   if(im.state==='end')return '';
-  if(im.mode==='sd'){const s=im.sd;return s.plantT>0?'Colocando la bomba…':s.st===1?'Defiende la bomba · '+Math.ceil(s.fuse)+' s':'Ronda '+im.round+'/3 · planta la bomba · '+Math.max(0,Math.ceil(IM_SD_TIME-im.clock))+' s'}
+  if(im.mode==='sd'){const s=im.sd;return s.plantT>0?'Colocando la bomba…':s.st===1?'Defiende la bomba · '+Math.ceil(s.fuse)+' s':'Ronda '+im.round+'/3 · planta la bomba · '+Math.max(0,Math.ceil(IM_SD_TIME+TIMEX[hk('time')]-im.clock))+' s'}
   return mmss(im.limit-im.clock)}
 // HUD mínimo: modo y marcador, y el dinero ganado en una caja verde (con el multiplicador y la racha)
 function imHud(){let h=imMn(im.mode).name.split(' · ')[0]+'<br>';
@@ -1566,7 +1580,7 @@ function fireShot(){
   }
   if(any){S.hits++;streak++;if(streak>S.stat.maxStreak)S.stat.maxStreak=streak;if(FX&&hitT<=0){hitT=.1;$('#hitm').className=''}}else streak=0;
   kick+=recoilOf();bloom=Math.min(.05,bloom+w.spread*.6+.002);gunZ=.05+w.recoil*.5;flashT=hasAtt('sup')?.02:.045;(hasAtt('sup')?sfx.sup:sfx.shot)();rumble(Math.min(1,.25+w.recoil*6),.5,70);
-  if(!hk('inf'))S.ammo--;S.dirt=Math.min(1,S.dirt+dirtShot());fireCd=1/w.rate;
+  if(!hk('inf'))S.ammo--;S.dirt=Math.min(1,S.dirt+dirtShot());fireCd=1/(w.rate*(area===4?RAPID[hk('rapid')]:1));
   if(rnd()<jamChance()){gst='jam';jamNeed=racks();gT=0;sfx.jam();rumble(.8,.2,160);tip('jam','Arma encasquillada',`Pulsa ${kn('R','X')} varias veces para sacar el casquillo. Un arma sucia falla más`)}
   else if(area===0&&S.dirt>.6)tip('dirt','El arma está muy sucia',`Pulsa ${kn('C','Y')} para limpiarla o se encasquillará a menudo`);
 }
@@ -1676,7 +1690,7 @@ function update(dt){
     else if(t.st===1){t.life-=dt;if(t.amp)t.x=t.x0+Math.sin(time*t.sp+t.ph)*t.amp;if(t.life<=0){t.st=2;t.anim=1}}
     else{t.anim-=dt*4;if(t.anim<=0){t.o.g.visible=false;pool.push(t.o);targets.splice(i,1)}}}
   if(area>=1&&area<=4)updBots(dt);
-  lastHit+=dt;{const mh=maxHp();if(php>mh)php=mh;if(php<mh&&(lastHit>4||zn!==2))php=Math.min(mh,php+mh*regenRate()*(zn===2?1:4)*dt)}
+  lastHit+=dt;{const mh=maxHp();if(php>mh)php=mh;if(php<mh&&php>0&&(lastHit>(area===4&&hk('regen')?1:4)||zn!==2))php=Math.min(mh,php+mh*regenRate()*(area===4?REG[hk('regen')]:1)*(zn===2?1:4)*dt)}
   if(flipT>0){flipT-=dt;if(flipT<=0){flipT=0;coinFace=flipWin?1:-1;if(flipWin){S.money+=flipBet*2;S.coin.w++;coinMsg='Cara: ganas $'+fmt(flipBet);sfx.uiOk()}else{S.coin.l++;coinMsg='Cruz: pierdes $'+fmt(flipBet);sfx.err()}if(state==='menu'&&menuId==='coin')buildMenu()}}
   rateT+=dt;if(rateT>=5){const inst=rateAcc/rateT;S.rate+=(inst-S.rate)*Math.min(1,inst>S.rate?rateT/45:rateT/900);rateAcc=0;rateT=0}
   const pr=pasRate();if(pr>0)earn(pr*dt);
@@ -1724,7 +1738,7 @@ function hud(){
   const w=W(),rk=rank(),lo=rk?rankAt(rk-1):0,hi=rankAt(rk),zn=zone();
   $('#money').textContent='$'+fmt(S.money);$('#chapas').textContent=S.chapas+' chapas'+(pasRate()>0?` · +$${fmt(pasRate())}/s`:'');{const eco=area>=2?'none':'',prog=area>=2?'none':'';$('#money').style.display=eco;$('#chapas').style.display=eco;$('#rankrow').style.display=prog;$('#xp').style.display=prog}
   $('#rankrow').textContent=`Nivel ${rk+1} · ${RANKS[rk]}`+(S.medals?` · ${S.medals} medallas`:'');$('#xpf').style.width=(rk>=RANKS.length-1?100:Math.min(100,(S.total-lo)/(hi-lo)*100))+'%';
-  {const mh=maxHp(),f=Math.max(0,php/mh);$('#hpw').style.display=area>=1?'block':'none';$('#hpf').style.width=(f*100)+'%';$('#hpf').style.background=f<.35?'#e0705c':'#d8dccf';$('#hpt').textContent=`Vida ${Math.max(0,Math.ceil(php))} / ${mh}`;
+  {const mh=maxHp(),f=Math.max(0,php/mh);$('#hpw').style.display=area>=1?'block':'none';$('#hpf').style.width=(f*100)+'%';$('#hpf').style.background=f<.35?'#e0705c':'#d8dccf';$('#hpt').textContent=`Vida ${Math.max(0,Math.ceil(php))} / ${mh}`+(area===4&&imShield>0?` · escudo ${Math.ceil(imShield)}`:'');
     $('#vig').style.opacity=area>=1?Math.max(hurtT>0?.75:0,f<.35?.45:0):0}
   const show=inRange()&&state==='play'&&!(ads&&zoomOf()<20)&&!(deadT>0);$('#cross').style.opacity=show?1:0;
   const g=Math.round(6+spreadOf()*900);cr[0].style.top=(-g-8)+'px';cr[1].style.top=g+'px';cr[2].style.left=(-g-8)+'px';cr[3].style.left=g+'px';$('#hitm').style.opacity=hitT>0?1:0;
@@ -1907,7 +1921,7 @@ requestAnimationFrame(loop);
 window.G={get S(){return S},set S(v){S=v},update,render,hud,tryFire,keyR,startClean,startReload,buyCal,buyW,buyAtt,buyArm,equip,swapW,buySkill,buyPas,claim,targets,bots,WEAPONS,ATT,ARM,CLS,SK,CH,PAS,CAMOS,COV,skCost,calCost,pasCost,shotDmg,magSize,tArmor,tHP,tReward,fresh,resetRun,medalsFor,
   chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
   get flipT(){return flipT},get gun(){return gun},raw(){renderer.render(scene,camera)},get gst(){return gst},get state(){return state},get area(){return area},get php(){return php},set php(v){php=v},get p(){return{px,pz,yaw,area}},setFX(v){FX=v},play(){if(mode==='menu')mode='sv';started=true;state='play';$('#mm').classList.add('off')},
-  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
+  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},get imShield(){return imShield},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
   aim(t,off,h){const dx=t.x+(off||0)-px,dy=(h!==undefined?h:t.y)-eyeH(),dz=t.z-pz;yaw=Math.atan2(-dx,-dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));kick=0;bloom=0;moving=0}};
 })();
 </script>
