@@ -797,43 +797,82 @@ let misD1=null,misD2=null,misC1=null,misC2=null;
  furn(2,.6,3,fab,11,3.2,-60,0);furn(2.4,.8,1,dkW,-8,3.2,-59,0);furn(.6,2.1,2.4,dkW,-13.8,3.2,-58,1);furn(1.1,1.8,1.1,dkW,2,3.2,-46.6,1);furn(1.6,.8,.8,dkW,-4,3.2,-63,0);
  for(const q of[[-8,2.9,-24],[9,2.9,-19],[10,5.9,-39],[4,6.2,-48],[-9,6.2,-58]]){const l=new THREE.PointLight(0xff2a1a,.9,6.5);l.position.set(X+q[0],q[1],q[2]);scene.add(l);isp(.05,new THREE.MeshBasicMaterial({color:0xff3020}),X+q[0],q[1]+.1,q[2])}
 }
-// ---------- modo incremental: tres arenas pequeñas (gulag, buscar y destruir, contra todos) ----------
-// cada una vive en su propio sitio del mundo; la lista de coberturas genera a la vez la geometría y la colisión
-const IMAPS={};let imBombM=null,imBombL=null;
-{const Z=BGZ,corr=ctex(128,(g,q)=>{g.fillStyle='#fff';g.fillRect(0,0,q,q);for(let x=0;x<q;x+=8){g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x,0,3,q);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x+4,0,2,q)}},3,1),
+// ---------- modo incremental: arenas pequeñas (varias por modo) ----------
+// cada una vive en su propio sitio del mundo (fila = número de mapa, columna = modo); la lista de coberturas genera a la vez la geometría y la colisión
+const IMAPS={},IM_MAPS={duel:['duel','duel2','duel3'],sd:['sd','sd2','sd3'],ffa:['ffa','ffa2','ffa3','ffa4']};let imBombM=null,imBombL=null;
+{const corr=ctex(128,(g,q)=>{g.fillStyle='#fff';g.fillRect(0,0,q,q);for(let x=0;x<q;x+=8){g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x,0,3,q);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x+4,0,2,q)}},3,1),
   cm=c=>mat({color:c,map:corr,roughness:.7,metalness:.3}),ctn=[0x8a3a2a,0x2a4f7a,0x3a6a3a,0xb06a1a,0x6a6f74].map(cm),
-  wallM=mat({map:TX.conc(4,1.5),color:0xc9c6bb}),dkW=mat({map:TX.conc(4,1.5),color:0x6c6e6a}),sandW=mat({map:TX.conc(4,1.5),color:0xc7b48a}),crate=mat({map:TX.wood(1,1)});
-  // cov: [x0,x1,z0,z1,alto,opaca(1)/baja(0),material] relativos al centro de la arena
-  const arena=(id,cx,w,d,o)=>{const cov=[],wh=o.wh||4.6;
+  wallM=mat({map:TX.conc(4,1.5),color:0xc9c6bb}),dkW=mat({map:TX.conc(4,1.5),color:0x6c6e6a}),sandW=mat({map:TX.conc(4,1.5),color:0xc7b48a}),
+  steelW=mat({map:TX.conc(4,1.5),color:0x8e98a0}),brickW=mat({map:TX.conc(4,1.5),color:0xa68472}),crate=mat({map:TX.wood(1,1)}),
+  flo=(rx,ry,c)=>mat({map:TX.floor(rx,ry),color:c});
+  // cov: [x0,x1,z0,z1,alto,opaca(1)/baja(0),material] relativos al centro de la arena · site: objetivo de la bomba (solo buscar y destruir)
+  const arena=(id,cx,k,w,d,o)=>{const Z=BGZ-150*k,cov=[],wh=o.wh||4.6;
     const fl=new THREE.Mesh(new THREE.PlaneGeometry(w,d),o.floor);fl.rotation.x=-PI/2;fl.position.set(cx,.03,Z);fl.receiveShadow=true;scene.add(fl);
     const gr=new THREE.Mesh(new THREE.PlaneGeometry(150,150),mat({map:TX.dirt(40,40),color:0x77746c,roughness:1}));gr.rotation.x=-PI/2;gr.position.set(cx,.01,Z);gr.receiveShadow=true;scene.add(gr);
     box(w+1,wh,.5,o.wall,cx,wh/2,Z-d/2-.25);box(w+1,wh,.5,o.wall,cx,wh/2,Z+d/2+.25);box(.5,wh,d,o.wall,cx-w/2-.25,wh/2,Z);box(.5,wh,d,o.wall,cx+w/2+.25,wh/2,Z);
     for(const c of o.cov){const x0=c[0],x1=c[1],z0=c[2],z1=c[3],h=c[4];box(x1-x0,h,z1-z0,c[6],cx+(x0+x1)/2,h/2,Z+(z0+z1)/2);cov.push({x0:cx+x0,x1:cx+x1,z0:Z+z0,z1:Z+z1,tall:!!c[5]})}
     sign(o.title,3.2,cx,wh-1.1,Z-d/2+.01,0);sign(o.title,3.2,cx,wh-1.1,Z+d/2-.01,PI);
-    return IMAPS[id]={id,cx,w,d,cov,rects:[[cx-w/2,cx+w/2,Z-d/2,Z+d/2]],b:[cx-w/2+.4,cx+w/2-.4,Z-d/2+.4,Z+d/2-.4],spawns:o.spawns.map(s=>[cx+s[0],Z+s[1]])}};
-  // 1 vs 1 · gulag: 14 x 18 m, pilar central y dos muros en diagonal
-  arena('duel',-150,14,18,{title:'GULAG',wh:5,floor:mat({map:TX.floor(5,6),color:0x8a8c88}),wall:dkW,
+    if(o.site){ib(4.4,.02,4.4,M.yel,cx+o.site[0],.05,Z+o.site[1]);ib(3.8,.03,3.8,mat({color:0x2a2c2b}),cx+o.site[0],.052,Z+o.site[1])}
+    return IMAPS[id]={id,name:o.name,cx,Z,w,d,cov,rects:[[cx-w/2,cx+w/2,Z-d/2,Z+d/2]],b:[cx-w/2+.4,cx+w/2-.4,Z-d/2+.4,Z+d/2-.4],spawns:o.spawns.map(s=>[cx+s[0],Z+s[1]]),site:o.site||null}};
+  // ===== 1 vs 1 =====
+  // gulag: 14 x 18 m, pilar central y dos muros en diagonal
+  arena('duel',-150,0,14,18,{name:'Gulag',title:'GULAG',wh:5,floor:flo(5,6,0x8a8c88),wall:dkW,
     cov:[[-1.3,1.3,-1.3,1.3,3.2,1,dkW],[-5.6,-3.8,-4.8,-1.8,3,1,wallM],[3.8,5.6,1.8,4.8,3,1,wallM],[-5.2,-3.6,3,4.6,1.05,0,crate],[3.6,5.2,-4.6,-3,1.05,0,crate],[-1.8,1.8,5.6,6.2,1.05,0,M.metal],[-1.8,1.8,-6.2,-5.6,1.05,0,M.metal]],
     spawns:[[0,7.6],[0,-7.6]]});
-  for(const sx of[-1,1])for(let i=0;i<17;i++){ib(.06,2.6,.06,M.dark,-150+sx*6.9,1.3,Z-8+i)}
-  ib(.08,.08,18,M.dark,-150-6.9,2.6,Z);ib(.08,.08,18,M.dark,-150+6.9,2.6,Z);
-  // buscar y destruir: 32 x 26 m; tú entras por el sur y el objetivo está al fondo, entre dos muros
-  arena('sd',0,32,26,{title:'OBJETIVO A',wh:4.4,floor:mat({map:TX.floor(9,8),color:0xb9ad8c}),wall:sandW,
+  for(const sx of[-1,1])for(let i=0;i<17;i++){ib(.06,2.6,.06,M.dark,-150+sx*6.9,1.3,BGZ-8+i)}
+  ib(.08,.08,18,M.dark,-150-6.9,2.6,BGZ);ib(.08,.08,18,M.dark,-150+6.9,2.6,BGZ);
+  // búnker: 16 x 16 m, cuatro pilares, bloque bajo en el centro y dos muros que cierran la línea de tiro entre esquinas
+  arena('duel2',-150,1,16,16,{name:'Búnker',title:'BÚNKER',wh:5,floor:flo(5,5,0x7d8288),wall:steelW,
+    cov:[[-4.5,-2.5,-4.5,-2.5,3.2,1,dkW],[2.5,4.5,-4.5,-2.5,3.2,1,dkW],[-4.5,-2.5,2.5,4.5,3.2,1,dkW],[2.5,4.5,2.5,4.5,3.2,1,dkW],
+      [-1.2,1.2,-1.2,1.2,1.05,0,crate],[-.6,.6,-7.2,-5.2,3,1,wallM],[-.6,.6,5.2,7.2,3,1,wallM],[-7.8,-6.2,-.6,.6,1.05,0,M.metal],[6.2,7.8,-.6,.6,1.05,0,M.metal]],
+    spawns:[[-6.5,6.5],[6.5,-6.5]]});
+  // pasillo de contenedores: 12 x 22 m, largo y estrecho
+  arena('duel3',-150,2,12,22,{name:'Contenedores',title:'CONTENEDORES',wh:4.6,floor:flo(4,7,0x9a9488),wall:brickW,
+    cov:[[-6,-1.5,-6.5,-4.1,2.6,1,ctn[0]],[1.5,6,-1.2,1.2,2.6,1,ctn[1]],[-6,-1.5,4.1,6.5,2.6,1,ctn[2]],[-1,1,-3.2,-2.2,1.05,0,crate],[-1,1,2.2,3.2,1.05,0,crate],[2.6,5.4,-8,-7,1.05,0,M.conc],[-5.4,-2.6,7,8,1.05,0,M.conc]],
+    spawns:[[0,9.5],[0,-9.5]]});
+  // ===== Buscar y destruir =====
+  // objetivo A: 32 x 26 m; el objetivo está al fondo, entre dos muros
+  arena('sd',0,0,32,26,{name:'Objetivo A',title:'OBJETIVO A',wh:4.4,floor:flo(9,8,0xb9ad8c),wall:sandW,site:[0,-10.5],
     cov:[[-12.5,-6.4,-.6,1.84,2.6,1,ctn[0]],[6.4,12.5,-.6,1.84,2.6,1,ctn[1]],[-1.22,1.22,-3,3.1,2.6,1,ctn[3]],
       [-12,-9.56,4.5,10.6,2.6,1,ctn[2]],[9.56,12,4.5,10.6,2.6,1,ctn[4]],
       [-7.6,-5.6,-12.8,-9.4,3,1,sandW],[5.6,7.6,-12.8,-9.4,3,1,sandW],[-15.2,-13.2,-6.5,-1.5,3,1,sandW],[13.2,15.2,-6.5,-1.5,3,1,sandW],
       [-3.6,-2.2,-8.4,-7,1.05,0,crate],[2.2,3.6,-8.4,-7,1.05,0,crate],[-6.5,-4.9,7,8.6,1.05,0,crate],[4.9,6.5,7,8.6,1.05,0,crate],[-2.6,2.6,9.4,10,1.05,0,M.conc]],
     spawns:[[0,11.5],[-4.8,-10.6],[4.8,-10.6],[-2.8,-12.3],[-11,-6],[11,-6]]});
-  ib(4.4,.02,4.4,M.yel,0,.05,Z-10.5);ib(3.8,.03,3.8,mat({color:0x2a2c2b}),0,.052,Z-10.5);
-  // bomba: aparece al plantarla
+  // fábrica: el objetivo está en la esquina noreste, tras un hueco entre dos muros
+  arena('sd2',0,1,32,26,{name:'Fábrica',title:'OBJETIVO B',wh:4.4,floor:flo(9,8,0x8d9096),wall:steelW,site:[9,-10.5],
+    cov:[[4.4,6,-12.8,-8.6,3,1,steelW],[12,13.6,-12.8,-8.6,3,1,steelW],[-11,-5,2,4.4,2.6,1,ctn[3]],[1.5,7.5,2,4.4,2.6,1,ctn[1]],[-2.4,0,-8,-2,2.6,1,ctn[0]],
+      [-15.2,-13.2,-8,-2,3,1,steelW],[11,13.4,-4,.2,2.6,1,ctn[4]],[3.2,4.8,-6.4,-5,1.05,0,crate],[10.5,12,-7,-5.6,1.05,0,crate],[-8,-6.4,7,8.6,1.05,0,crate],[4,6,8,9.6,1.05,0,crate],[-8,-3,9.4,10,1.05,0,M.conc]],
+    spawns:[[-6,11.5],[11,-12.2],[3,-10.5],[14,-7],[-5,-6],[-9,-1]]});
+  // almacén oeste: el objetivo está en el extremo oeste, en una nave abierta hacia el este
+  arena('sd3',0,2,30,26,{name:'Almacén oeste',title:'OBJETIVO C',wh:4.4,floor:flo(8,8,0xa59a86),wall:brickW,site:[-11.5,-1.5],
+    cov:[[-15,-8.8,-5.6,-4.4,3,1,brickW],[-15,-8.8,1.4,2.6,3,1,brickW],[-4,2,-3,-.6,2.6,1,ctn[1]],[-4,-1.6,4,10.1,2.6,1,ctn[0]],[4,6.4,-8,-1.9,2.6,1,ctn[2]],[8.5,14,-1,1.4,2.6,1,ctn[4]],
+      [-7,-5.4,5,6.6,1.05,0,crate],[0,1.6,-8.6,-7,1.05,0,crate],[10,12,-8,-6.4,1.05,0,crate],[4,12,9.4,10,1.05,0,M.conc]],
+    spawns:[[8,11.5],[-9.8,-3.4],[-13,.4],[-9.5,.8],[-6,-6],[0,-4.8]]});
+  // bomba: aparece al plantarla (se coloca en el objetivo de cada mapa al elegirlo)
   imBombM=new THREE.Group();imBombM.add(box(.55,.2,.34,M.olive,0,.1,0,null,true));imBombL=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),new THREE.MeshBasicMaterial({color:0xff2a1a}));imBombL.position.set(0,.24,0);imBombM.add(imBombL);
-  imBombM.position.set(0,0,Z-10.5);imBombM.visible=false;scene.add(imBombM);
-  // contra todos: 26 x 26 m, cruz central, molinillo de muros y cajas bajas en las esquinas
-  arena('ffa',150,26,26,{title:'PATIO',wh:4.4,floor:mat({map:TX.floor(8,8),color:0xa9a69c}),wall:mat({map:TX.conc(4,1.5),color:0x8f948f}),
+  imBombM.visible=false;scene.add(imBombM);
+  // ===== Contra todos =====
+  // patio: 26 x 26 m, cruz central, molinillo de muros y cajas bajas en las esquinas
+  arena('ffa',150,0,26,26,{name:'Patio',title:'PATIO',wh:4.4,floor:flo(8,8,0xa9a69c),wall:mat({map:TX.conc(4,1.5),color:0x8f948f}),
     cov:[[-4.4,4.4,-1.22,1.22,2.6,1,ctn[1]],[-1.22,1.22,-4.4,4.4,2.62,1,ctn[0]],
       [-10.5,-8,-6.5,-2.5,3,1,wallM],[8,10.5,2.5,6.5,3,1,wallM],[2.5,6.5,-10.5,-8,3,1,wallM],[-6.5,-2.5,8,10.5,3,1,wallM],
       [5,7,5,7,1.05,0,crate],[-7,-5,5,7,1.05,0,crate],[5,7,-7,-5,1.05,0,crate],[-7,-5,-7,-5,1.05,0,crate]],
     spawns:[[-11.5,-11.5],[11.5,-11.5],[-11.5,11.5],[11.5,11.5],[0,-11.5],[0,11.5],[-11.5,0],[11.5,0]]});
+  // almacén: 28 x 22 m, estanterías altas y contenedores en el centro
+  arena('ffa2',150,1,28,22,{name:'Almacén',title:'ALMACÉN',wh:4.8,floor:flo(8,7,0x9a9890),wall:brickW,
+    cov:[[-8,-6.8,-7,0,3,1,M.locker],[-8,-6.8,2.5,8.5,3,1,M.locker],[6.8,8,-8.5,-2.5,3,1,M.locker],[6.8,8,0,7,3,1,M.locker],[-3.5,3.5,-1.2,1.2,2.6,1,ctn[2]],
+      [-2,0,-6,-4.5,1.05,0,crate],[0,2,4.5,6,1.05,0,crate],[-12,-10.5,-5,-3.5,1.05,0,crate],[10.5,12,3.5,5,1.05,0,crate]],
+    spawns:[[-12.5,-9],[12.5,-9],[-12.5,9],[12.5,9],[0,-9.5],[0,9.5],[-12.5,0],[12.5,0]]});
+  // anillo: 24 x 24 m, cuatro contenedores en molinillo alrededor de un centro abierto
+  arena('ffa3',150,2,24,24,{name:'Anillo',title:'ANILLO',wh:4.4,floor:flo(7,7,0xb0a590),wall:sandW,
+    cov:[[-5.5,-.5,-5.5,-3.1,2.6,1,ctn[0]],[3.1,5.5,-5.5,-.5,2.6,1,ctn[1]],[.5,5.5,3.1,5.5,2.6,1,ctn[3]],[-5.5,-3.1,.5,5.5,2.6,1,ctn[2]],
+      [-10,-8.5,-10,-8.5,1.05,0,crate],[8.5,10,-10,-8.5,1.05,0,crate],[-10,-8.5,8.5,10,1.05,0,crate],[8.5,10,8.5,10,1.05,0,crate]],
+    spawns:[[-10.5,-6],[-10.5,6],[10.5,-6],[10.5,6],[-5,-10.5],[5,-10.5],[-5,10.5],[5,10.5]]});
+  // callejón: 32 x 20 m, muros altos escalonados que dibujan un recorrido en zigzag
+  arena('ffa4',150,3,32,20,{name:'Callejón',title:'CALLEJÓN',wh:4.6,floor:flo(10,6,0x85888a),wall:steelW,
+    cov:[[-10,-8.8,-10,-2.5,3,1,wallM],[-5,-3.8,2.5,10,3,1,wallM],[0,1.2,-10,-2.5,3,1,wallM],[5,6.2,2.5,10,3,1,wallM],[10,11.2,-10,-2.5,3,1,wallM],
+      [-7.5,-6,-1,1,1.05,0,crate],[2.5,4,-1,1,1.05,0,crate],[7.5,9,-1,1,1.05,0,crate]],
+    spawns:[[-14.5,-8],[-14.5,8],[14.5,-8],[14.5,8],[-7.5,-8],[-2.5,8],[2.5,-8],[7.5,8]]});
 }
 // dianas
 const tMats=TARGETS.map((t,j)=>mat({roughness:j<3?.95:.5,metalness:j<3?0:.55,map:ctex(256,(g,q)=>{const c=q/2,C=(r,f,w)=>{g.beginPath();g.arc(c,c,r,0,7);if(f){g.fillStyle=f;g.fill()}if(w){g.lineWidth=w;g.stroke()}};
@@ -1326,13 +1365,19 @@ const IM_WEAPONS=[
  {wi:6,cost:2500,dmg:16,hf:.34,tag:'Subfusil'},
  {wi:7,cost:7000,dmg:16,hf:.5,tag:'Subfusil rápido'},
  {wi:11,cost:18000,dmg:26,hf:.55,tag:'Fusil de asalto'},
- {wi:16,cost:45000,dmg:28,hf:1,tag:'Fusil de asalto rápido'}];
+ {wi:16,cost:45000,dmg:28,hf:1,tag:'Fusil de asalto rápido'},
+ {wi:17,cost:90000,dmg:24,hf:.55,tag:'Ametralladora ligera'},
+ {wi:21,cost:150000,dmg:26,hf:1,tag:'Ametralladora ligera rápida'},
+ {wi:28,cost:250000,dmg:14,hf:.125,tag:'Escopeta'},
+ {wi:23,cost:400000,dmg:70,hf:1,tag:'Francotirador'},
+ {wi:26,cost:650000,dmg:110,hf:1,tag:'Francotirador pesado'},
+ {wi:31,cost:1000000,dmg:30,hf:1,tag:'Minigun'}];
 const IMW={};IM_WEAPONS.forEach(q=>IMW[q.wi]=q);
 // hacks: rama de mejoras. req = [hack, nivel mínimo]; tier solo sirve para sangrar la lista
 const IM_HACKS=[
  {id:'hb',n:'Hitbox ampliada',max:3,cost:[1500,6000,25000],req:null,tier:0,fx:['Zona de impacto ×1,5','Zona de impacto ×2,2','Zona de impacto ×3,2']},
  {id:'hsm',n:'Prima por headshot',max:3,cost:[1200,5000,22000],req:null,tier:0,fx:['Los headshots pagan ×1,5','Los headshots pagan ×2,5','Los headshots pagan ×4']},
- {id:'streak',n:'Racha de dinero',max:3,cost:[4000,15000,50000],req:['hsm',1],tier:1,fx:['Bonus de racha ×1,5 (con 4 bajas seguidas: ×2,5)','Bonus de racha ×2 (con 4 bajas seguidas: ×3)','Bonus de racha ×2,5 (con 4 bajas seguidas: ×3,5)']},
+ {id:'streak',n:'Racha de dinero',max:5,cost:[4000,15000,50000,150000,400000],req:['hsm',1],tier:1,fx:['Racha de 5 bajas seguidas: dinero ×2,5','Racha de 8 bajas: dinero ×3','Racha de 10 bajas: dinero ×4','Racha de 15 bajas: dinero ×5','Racha de 20 bajas: dinero ×6']},
  {id:'wall',n:'Wallhack',max:1,cost:[8000],req:['hb',1],tier:1,fx:['Ves a los enemigos a través de las paredes']},
  {id:'allhs',n:'Todo es headshot',max:1,cost:[12000],req:['hb',2],tier:1,fx:['Cualquier tiro al cuerpo cuenta como headshot']},
  {id:'norec',n:'Sin retroceso',max:1,cost:[9000],req:['hb',1],tier:1,fx:['Cero retroceso y cero dispersión']},
@@ -1344,7 +1389,8 @@ const IM_HACKS=[
  {id:'god',n:'Modo dios',max:3,cost:[6000,20000,50000],req:['hsm',2],tier:2,fx:['Daño recibido −20 %','Daño recibido −40 %','Daño recibido −60 %']},
  {id:'trig',n:'Triggerbot',max:1,cost:[35000],req:['aim',1],tier:3,fx:['Dispara solo en cuanto tienes a un enemigo en la mira']}];
 // racha: bajas seguidas sin morir → multiplicador de dinero (el hack «Racha de dinero» multiplica el bonus)
-const IM_STREAK=[1,1,1.25,1.5,2],imStreakMult=()=>1+(IM_STREAK[Math.min(im.ks,4)]-1)*(1+.5*hk('streak'));
+// tramos de la racha: [bajas seguidas, multiplicador]. De base valen los 3 primeros; cada nivel del hack «Racha de dinero» desbloquea el siguiente
+const IM_STREAK=[[2,1.25],[3,1.5],[4,2],[5,2.5],[8,3],[10,4],[15,5],[20,6]],imStreakMult=()=>{const n=3+hk('streak');let m=1;for(let i=0;i<n&&i<IM_STREAK.length;i++)if(im.ks>=IM_STREAK[i][0])m=IM_STREAK[i][1];return m};
 const BANG_MUL=4,HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
 // pagos base y dificultad de los bots por modo
 const IM_PAY={duel:{kill:25,hs:15,win:200},sd:{kill:50,hs:30,plant:100,rwin:100,win:300},ffa:{kill:40,hs:25,place:[400,250,120,40]}};
@@ -1354,38 +1400,43 @@ const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12
 // cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
 const imOwned=()=>IM_WEAPONS.filter(q=>S.own[q.wi]).length,imMult=()=>1+.25*Math.max(0,imOwned()-1);
 // dificultad suave: crece con las armas y los hacks que tengas; los bots nunca pasan de ~60 % más vida ni de +10 puntos de puntería
-const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/5*.6+Math.min(h,22)/22*.4)};
+const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/(IM_WEAPONS.length-1)*.6+Math.min(h,22)/22*.4)};
 const imc=()=>{const c=IMC[im.mode]||IMC.duel,d=imDiff();return{hp:Math.round(c.hp*(1+.6*d)),dmg:c.dmg*(1+.2*d),acc:Math.min(.88,c.acc+.1*d),react:c.react*(1-.3*d),fire:[c.fire[0]*(1-.2*d),c.fire[1]*(1-.2*d)]}};
 // nivel activo de un hack (solo cuenta dentro de una partida del modo incremental)
 const hkl=id=>S.inc&&S.inc.hk[id]&&!S.inc.off[id]?S.inc.hk[id]:0,hk=id=>area===4?hkl(id):0;
 const im={on:false,ks:0,spawnQ:[],mode:'duel',state:'count',t:0,clock:0,gain:0,round:1,sc:[0,0],goal:3,limit:240,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0},bx:0,bz:0,cnt:0};
 let imMap=null,incP=null;
-const incFresh=()=>Object.assign(fresh(),{inc:{mode:'duel',um:{duel:1,sd:0,ffa:0},wsel:0,hk:{},off:{},st:{matches:0,wins:0,kills:0,hs:0,plants:0}}});
+const incFresh=()=>Object.assign(fresh(),{inc:{mode:'duel',um:{duel:1,sd:0,ffa:0},wsel:0,map:{},hk:{},off:{},st:{matches:0,wins:0,kills:0,hs:0,plants:0}}});
 function incSave(){if(!incP)return;try{localStorage.setItem(INC_KEY,JSON.stringify(incP))}catch(e){}}
-function incLoad(){try{const d=JSON.parse(localStorage.getItem(INC_KEY));if(!d||!d.inc)return null;const f=incFresh(),q=Object.assign(f,d);q.inc=Object.assign(f.inc,d.inc);q.inc.um=Object.assign({duel:1,sd:0,ffa:0},d.inc.um);q.inc.um.duel=1;q.inc.hk=d.inc.hk||{};q.inc.off=d.inc.off||{};q.inc.st=Object.assign({matches:0,wins:0,kills:0,hs:0,plants:0},d.inc.st||{});
+function incLoad(){try{const d=JSON.parse(localStorage.getItem(INC_KEY));if(!d||!d.inc)return null;const f=incFresh(),q=Object.assign(f,d);q.inc=Object.assign(f.inc,d.inc);q.inc.um=Object.assign({duel:1,sd:0,ffa:0},d.inc.um);q.inc.um.duel=1;q.inc.map=d.inc.map||{};q.inc.hk=d.inc.hk||{};q.inc.off=d.inc.off||{};q.inc.st=Object.assign({matches:0,wins:0,kills:0,hs:0,plants:0},d.inc.st||{});
   for(const k of['sk','tips','arm','att','dirtW','claim','pas'])q[k]=d[k]||{};q.stat=Object.assign(fresh().stat,d.stat||{});q.own={0:1};for(const w of IM_WEAPONS)if(d.own&&d.own[w.wi])q.own[w.wi]=1;
   q.inc.wsel=Math.max(0,Math.min(IM_WEAPONS.length-1,q.inc.wsel|0));if(!q.own[IM_WEAPONS[q.inc.wsel].wi])q.inc.wsel=0;if(!IM_MODES.some(m=>m.id===q.inc.mode&&q.inc.um[m.id]))q.inc.mode='duel';
   q.weapon=IM_WEAPONS[q.inc.wsel].wi;q.alt=0;q.coin=q.coin||{w:0,l:0};return q}catch(e){return null}}
 const imMn=id=>IM_MODES.find(m=>m.id===id);
-function imMapSet(id){imMap=IMAPS[id];Object.assign(AREAS[4],{rects:imMap.rects,cov:imMap.cov,b:imMap.b,spawns:imMap.spawns})}
+const PLANT=STN.find(q=>q.id==='plant');
+// al elegir un mapa de buscar y destruir, la estación de plantar y la bomba se colocan en su objetivo
+function imMapSet(id){imMap=IMAPS[id];Object.assign(AREAS[4],{rects:imMap.rects,cov:imMap.cov,b:imMap.b,spawns:imMap.spawns});
+  if(imMap.site){const x=imMap.cx+imMap.site[0],z=imMap.Z+imMap.site[1];Object.assign(PLANT,{x,z,lx:x,lz:z});imBombM.position.set(x,0,z)}}
+// mapa de la partida: el elegido en el lobby o uno al azar
+const imPick=mode=>{const l=IM_MAPS[mode],i=(S.inc.map||{})[mode];return l[i>=0&&i<l.length?i:Math.floor(rnd()*l.length)]};
 function imPlace(x,z,yw){px=x;pz=z;yaw=yw;pitch=0;pgy=0;jy=0;vy=0;kick=0}
 // el fondo del lobby: la arena elegida, vista desde fuera
-function imPreview(){const I=S.inc;area=4;imMapSet(I.mode);clearBots();im.on=false;const s=imMap.spawns[0];imPlace(s[0],s[1],0);php=maxHp();pInv=0;gst='ready';S.ammo=magSize()}
+function imPreview(){const I=S.inc,l=IM_MAPS[I.mode],i=(I.map||{})[I.mode];area=4;imMapSet(l[i>=0&&i<l.length?i:0]);clearBots();im.on=false;const s=imMap.spawns[0];imPlace(s[0],s[1],imYawC(s[0],s[1]));php=maxHp();pInv=0;gst='ready';S.ammo=magSize()}
 function imPay(m,why){m=Math.round(m*CSH[hk('cash')]*imMult()*imStreakMult());S.money+=m;im.gain+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
 function imReady(t){php=maxHp();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=t||3;im.cnt=4}
-function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*5,P=m.spawns[0],E=m.spawns[1];imPlace(P[0]+j(),P[1],0);mkBot({team:1,x:E[0]+j(),z:E[1],rot:PI,name:'Rival'});if(fast){php=maxHp();S.ammo=magSize();gst='ready';pInv=1}else imReady(3)}
+function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*1.6,P=m.spawns[0],E=m.spawns[1],a=P[0]+j(),b=P[1]+j(),c=E[0]+j(),d=E[1]+j();imPlace(a,b,imYawC(a,b));mkBot({team:1,x:c,z:d,rot:imYawC(c,d),name:'Rival'});if(fast){php=maxHp();S.ammo=magSize();gst='ready';pInv=1}else imReady(3)}
 // el rival nuevo sale en el extremo más lejano de ti
-function imRival(){const c=imMap.spawns.slice(0,2).sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz))[0];let x=c[0],z=c[1];for(let k=0;k<12;k++){const tx=c[0]+(rnd()-.5)*5;if(botOk(tx,c[1])){x=tx;break}}mkBot({team:1,x,z,rot:z<pz?PI:0,name:'Rival'}).react=.4}
-function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;imPlace(m.spawns[0][0],m.spawns[0][1],0);for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});im.bx=m.cx;im.bz=BGZ-10.5;imBombM.visible=false;imReady()}
+function imRival(){const c=imMap.spawns.slice(0,2).sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz))[0];let x=c[0],z=c[1];for(let k=0;k<12;k++){const tx=c[0]+(rnd()-.5)*1.6;if(botOk(tx,c[1])){x=tx;break}}mkBot({team:1,x,z,rot:imYawC(x,z),name:'Rival'}).react=.4}
+function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;im.bx=m.cx+m.site[0];im.bz=m.Z+m.site[1];imPlace(m.spawns[0][0],m.spawns[0][1],Math.atan2(-(im.bx-m.spawns[0][0]),-(im.bz-m.spawns[0][1])));for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});imBombM.visible=false;imReady()}
 function imFfaBot(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1]})}
-const imYawC=(x,z)=>Math.atan2(-(imMap.cx-x),-(BGZ-z));   // mirar hacia el centro de la arena
+const imYawC=(x,z)=>Math.atan2(-(imMap.cx-x),-(imMap.Z-z));   // mirar hacia el centro de la arena
 function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],imYawC(q[0],q[1]));for(let i=1;i<8;i++)imFfaBot(i);imReady()}
 function imStart(){const I=S.inc;if(!I.um[I.mode])return;const q=IM_WEAPONS[I.wsel];
-  area=4;imMapSet(I.mode);clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
+  area=4;imMapSet(imPick(I.mode));clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
   S.alt=IM_WEAPONS.map(w=>w.wi).filter(w=>S.own[w]&&w!==S.weapon).pop()||S.weapon;
   deadT=0;imDeathClear();Object.assign(im,{on:true,ks:0,spawnQ:[],mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:IM_TIME[I.mode]||0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
   if(I.mode==='duel')imRound();else if(I.mode==='sd')imSdSetup();else imFfaSetup();
-  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'45 segundos · gana quien tenga más bajas')}
+  startPlay();hud();note('Mapa: '+imMap.name);banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'45 segundos · gana quien tenga más bajas')}
 function imToLobby(){incSave();state='pause';wipeWorld();imPreview();hud();incLobby()}
 function incLobby(){state='pause';kb.w=kb.a=kb.s=kb.d=0;kb.fire=kb.ads=kb.crouch=kb.sprint=false;$('#mm').classList.remove('off');if(document.pointerLockElement)document.exitPointerLock();mmShow('lobby')}
 function startInc(isNew){if(isNew||!incP)incP=incFresh();cfgTo(incP);S=incP;mode='inc';started=false;wipeWorld();imPreview();hud();incSave();incLobby()}
@@ -1404,7 +1455,7 @@ function imSdEnd(win,why){if(im.state!=='play')return;im.sc[win?0:1]++;if(win)im
   im.state='between';im.t=4;im.round++;for(const b of bots)b.tg=null;note(win?'Ronda ganada':'Ronda perdida',`${why} · rondas ${im.sc[0]} – ${im.sc[1]}`)}
 function imScore(k,v){if(im.state!=='play'||im.mode!=='ffa')return;im.fsc[k].k++;im.fsc[v].d++}
 function imKill(k,v,head){if(!im.on||im.state!=='play')return;const P=IM_PAY[im.mode],I=S.inc;
-  if(k===PL){I.st.kills++;im.ks++;if(im.ks>=2&&im.ks<=4&&FX)note('Racha de '+im.ks+' bajas','Dinero ×'+imStreakMult().toFixed(2));let m=P.kill;if(head){I.st.hs++;m+=P.hs*HSM[hk('hsm')]}imPay(m,head?'headshot':'')}
+  if(k===PL){I.st.kills++;const pm=imStreakMult();im.ks++;const sm=imStreakMult();if(sm>pm&&FX)note('Racha de '+im.ks+' bajas','Dinero ×'+sm.toFixed(2));let m=P.kill;if(head){I.st.hs++;m+=P.hs*HSM[hk('hsm')]}imPay(m,head?'headshot':'')}
   if(im.mode==='duel')imDuelKill(k===PL);
   else if(im.mode==='sd'){if(k===PL&&!bots.some(b=>b.st===1))imSdEnd(true,'Los cinco abatidos')}
   else{imScore(k===PL?0:k.id,v.id);im.spawnQ.push({t:IM_RESPAWN,id:v.id})}}
@@ -1472,14 +1523,16 @@ function lobbyRender(){const I=S.inc,nm=imMn(I.mode),wp=IM_WEAPONS[I.wsel],nh=IM
   let R;
   if(lbTab==='modes')R=IM_MODES.map(m=>{const un=I.um[m.id],sel=I.mode===m.id;return row('lb:m:'+m.id,m.name,m.d,sel?'elegido':un?'elegir':'$'+fmt(m.cost),sel?'sel ok':un||S.money>=m.cost?'ok':'lock')});
   else if(lbTab==='weapons')R=IM_WEAPONS.map((q,i)=>{const w=WEAPONS[q.wi],own=S.own[q.wi],pv=i===0||S.own[IM_WEAPONS[i-1].wi],cur=I.wsel===i;
-    return row('lb:w:'+i,w.name,`${q.tag} · ${w.auto?'automática':'tiro a tiro'} · ${w.rate}/s · cargador ${w.mag} · daño ${q.dmg} · headshot: ${Math.ceil(1/q.hf-1e-6)} tiro${q.hf>=1?'':'s'}`+(i?` · dinero ×${+(1+.25*i).toFixed(2)} al tenerla`:'')+(own||pv?'':' · consigue antes la anterior'),cur?'equipada':own?'equipar':pv?'$'+fmt(q.cost):'bloqueada',cur?'sel ok':own||(pv&&S.money>=q.cost)?'ok':'lock')});
+    return row('lb:w:'+i,w.name,`${q.tag} · ${w.auto?'automática':'tiro a tiro'} · ${w.rate}/s · cargador ${w.mag} · daño ${q.dmg} · headshot: ${Math.ceil(1/(q.hf*w.pel)-1e-6)} tiro${q.hf*w.pel>=1?'':'s'}`+(i?` · dinero ×${+(1+.25*i).toFixed(2)} al tenerla`:'')+(own||pv?'':' · consigue antes la anterior'),cur?'equipada':own?'equipar':pv?'$'+fmt(q.cost):'bloqueada',cur?'sel ok':own||(pv&&S.money>=q.cost)?'ok':'lock')});
   else if(lbTab==='stats'){const st=I.st;R=[['Partidas',st.matches],['Victorias',st.wins],['Bajas',st.kills],['Headshots',st.hs],['Bombas plantadas',st.plants],['Dificultad de los bots',Math.round(imDiff()*100)+' %'],['Dinero por armas','×'+imMult()],['Mercado negro','×'+CSH[hkl('cash')]]].map(r=>`<div class="lbs"><span>${r[0]}</span><b>${r[1]}</b></div>`)}
   else R=IM_HACKS.map(h=>{const l=I.hk[h.id]||0,rq=!h.req||(I.hk[h.req[0]]||0)>=h.req[1],mx=l>=h.max,on=!I.off[h.id],rn=h.req?IM_HACKS.find(x=>x.id===h.req[0]).n:'';
     const d=!rq?`Requiere: ${rn}${h.req[1]>1?' nivel '+h.req[1]:''}`:mx?h.fx[l-1]:l?`Ahora: ${h.fx[l-1]} · Siguiente: ${h.fx[l]}`:h.fx[0];
     return row('lb:h:'+h.id,h.n+(h.max>1?` · ${l}/${h.max}`:''),d,!rq?'bloqueado':mx?(on?'activo':'apagado'):'$'+fmt(h.cost[l]),!rq?'lock':mx?(on?'sel ok':''):S.money>=h.cost[l]?'ok':'lock',l?`<button class="lbt ${on?'on':''}" data-a="lb:t:${h.id}">${on?'ON':'OFF'}</button>`:'',h.tier)});
+  if(lbTab==='modes'){const l=IM_MAPS[I.mode],i=I.map[I.mode];R.push(row('lb:map','Mapa · '+(i>=0&&i<l.length?IMAPS[l[i]].name:'Aleatorio'),`${l.length} mapas para este modo. Toca para cambiar de mapa o dejarlo aleatorio.`,'cambiar','ok'))}
   $('#lblist').innerHTML=R.join('');$('#lbmsg').textContent=lbMsg||(lastDev==='touch'?'Toca una opción para elegirla o comprarla':lastDev==='pad'?'◀ ▶ cambiar de pestaña · A elegir o comprar':'A / D: cambiar de pestaña · Enter o clic: elegir o comprar');mmFocus()}
 function lobbyAct(a){const I=S.inc,p=a.split(':');lbMsg='';
-  if(p[1]==='m'){const m=imMn(p[2]);if(I.um[m.id]){I.mode=m.id;sfx.uiOk()}else if(S.money>=m.cost){S.money-=m.cost;I.um[m.id]=1;I.mode=m.id;sfx.uiOk();lbMsg='Modo desbloqueado: '+m.name}else{sfx.err();lbMsg='Te faltan $'+fmt(m.cost-S.money)}imPreview()}
+  if(p[1]==='map'){const n=IM_MAPS[I.mode].length,c=I.map[I.mode];I.map[I.mode]=c>=0&&c+1<n?c+1:c>=0?-1:0;sfx.ui();imPreview()}
+  else if(p[1]==='m'){const m=imMn(p[2]);if(I.um[m.id]){I.mode=m.id;sfx.uiOk()}else if(S.money>=m.cost){S.money-=m.cost;I.um[m.id]=1;I.mode=m.id;sfx.uiOk();lbMsg='Modo desbloqueado: '+m.name}else{sfx.err();lbMsg='Te faltan $'+fmt(m.cost-S.money)}imPreview()}
   else if(p[1]==='w'){const i=+p[2],q=IM_WEAPONS[i];if(S.own[q.wi]){I.wsel=i;equip(q.wi);sfx.uiOk()}else if(!S.own[IM_WEAPONS[i-1].wi]){sfx.err();lbMsg='Consigue antes '+WEAPONS[IM_WEAPONS[i-1].wi].name}
     else if(S.money>=q.cost){S.money-=q.cost;S.own[q.wi]=1;I.wsel=i;equip(q.wi);sfx.uiOk();lbMsg='Arma comprada: '+WEAPONS[q.wi].name}else{sfx.err();lbMsg='Te faltan $'+fmt(q.cost-S.money)}}
   else{const h=IM_HACKS.find(x=>x.id===p[2]),l=I.hk[h.id]||0,rq=!h.req||(I.hk[h.req[0]]||0)>=h.req[1];
@@ -1636,8 +1689,8 @@ function render(dt){
   {const bl=bLevel()>0;doorB.visible=!bl;lampB.material.color.setHex(bl?0x30c050:0xd03020);lampH.material.color.setHex(houseOpen()?0x30c050:0xd03020);lampF.material.color.copy(lampH.material.color);lampS.material.color.copy(lampH.material.color);misD1.visible=!misC1.off;misD2.visible=!misC2.off;coinM.rotation.x=flipT>0?(flipWin?1:-1)*PI/2+PI*12*Math.pow(flipT/1.4,2):coinFace*PI/2}
   camera.position.set(px,pgy+eyeH()+Math.sin(bob*2)*(.022+.02*sprint)*moving*(jy>0?0:1),pz);camera.rotation.set(pitch+kick,yaw,0);const lobby=mode==='inc'&&!im.on&&area===4&&!!imMap,dc=deadT>0&&!!imDeath;if(area===4)imRender(dt);
   if(dc)deathCam(dt);canvas.classList.toggle('dead',dc);
-  if(lobby){const t=performance.now()/1000*.13,R=Math.min(imMap.w,imMap.d)*.3;camera.position.set(imMap.cx+Math.sin(t)*R,4.8,BGZ+Math.cos(t)*R);camera.lookAt(imMap.cx,1,BGZ)}
-  skyM.position.set(px,0,pz);{const ox=area===1?OX:area===3?MX:area===4&&imMap?imMap.cx:0,oz=area===1?-28:area===2?FZ:area===3?Math.round(pz/20)*20:area===4?BGZ:6;sun.position.set(ox-45,60,oz);sun.target.position.set(ox,0,oz)}
+  if(lobby){const t=performance.now()/1000*.13,R=Math.min(imMap.w,imMap.d)*.3;camera.position.set(imMap.cx+Math.sin(t)*R,4.8,imMap.Z+Math.cos(t)*R);camera.lookAt(imMap.cx,1,imMap.Z)}
+  skyM.position.set(px,0,pz);{const ox=area===1?OX:area===3?MX:area===4&&imMap?imMap.cx:0,oz=area===1?-28:area===2?FZ:area===3?Math.round(pz/20)*20:area===4&&imMap?imMap.Z:6;sun.position.set(ox-45,60,oz);sun.target.position.set(ox,0,oz)}
   // dentro de la mansión no hay luz: casi negro sin visión nocturna
   {const inH=area===3&&pz<-14.3&&Math.abs(px-MX)<14.6;dark+=((inH?1:0)-dark)*Math.min(1,dt*3);const q=dark;hemiL.intensity=1-q*(nv?.2:.975);sun.intensity=2.3*(1-q);for(const f of fillL)f.intensity=1.1*(1-q)+(nv?.6*q:0);
     renderer.toneMappingExposure=1.05+(nv?.45:0);{const ge=dark>.5?.05:1;if(ge!==gunEnv){gunEnv=ge;gun.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial)o.material.envMapIntensity=ge})}}scene.fog.color.setRGB(.576*(1-q*.95),.647*(1-q*.95),.678*(1-q*.95))}
@@ -1854,7 +1907,7 @@ requestAnimationFrame(loop);
 window.G={get S(){return S},set S(v){S=v},update,render,hud,tryFire,keyR,startClean,startReload,buyCal,buyW,buyAtt,buyArm,equip,swapW,buySkill,buyPas,claim,targets,bots,WEAPONS,ATT,ARM,CLS,SK,CH,PAS,CAMOS,COV,skCost,calCost,pasCost,shotDmg,magSize,tArmor,tHP,tReward,fresh,resetRun,medalsFor,
   chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
   get flipT(){return flipT},get gun(){return gun},raw(){renderer.render(scene,camera)},get gst(){return gst},get state(){return state},get area(){return area},get php(){return php},set php(v){php=v},get p(){return{px,pz,yaw,area}},setFX(v){FX=v},play(){if(mode==='menu')mode='sv';started=true;state='play';$('#mm').classList.add('off')},
-  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,playerDown,get deadT(){return deadT},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
+  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
   aim(t,off,h){const dx=t.x+(off||0)-px,dy=(h!==undefined?h:t.y)-eyeH(),dz=t.z-pz;yaw=Math.atan2(-dx,-dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));kick=0;bloom=0;moving=0}};
 })();
 </script>
