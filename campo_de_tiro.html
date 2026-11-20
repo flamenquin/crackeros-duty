@@ -131,6 +131,9 @@ canvas#c.dead{filter:grayscale(.85) brightness(.85)}
 body.touch #tc{display:block}
 #tc .tb{position:absolute;display:none;align-items:center;justify-content:center;border-radius:50%;border:1.5px solid #ffffff66;background:#0c0e0b70;color:#e3e8dc;font-size:max(9px,2.7vmin);letter-spacing:.5px;text-transform:uppercase;line-height:1.1;padding:0;touch-action:none}
 #tc.play .tb{display:flex}#tc.play .tb.hid{display:none}
+#tc .tb svg{width:56%;height:56%;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#tc [data-b=fire] svg{width:50%;height:50%}
+kbd svg{width:1.15em;height:1.15em;vertical-align:-.22em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #tc .tb.dn,#tc .tb.on{background:#b9cf5a60;border-color:#b9cf5a;color:#fff}#tc .tb.al{border-color:#e0705c;color:#ffd0c6}
 #tc [data-b=pause]{left:calc(8px + var(--sl));top:8px;width:42px;height:42px;font-size:14px;font-weight:600}
 #tc [data-b=fire]{right:calc(6vmin + var(--sr));bottom:calc(20vmin + var(--sb));width:21vmin;height:21vmin;background:#e0705c38;border-color:#e0705ccc}
@@ -184,7 +187,7 @@ body.touch #keys{grid-template-columns:1fr}body.touch #keys>div{display:none}bod
   <div id="bl"><div id="hpw"><div id="hpt"></div><div id="hpb"><i id="hpf"></i></div></div><div id="money"></div><div id="chapas"></div><div id="rankrow"></div><div id="xp"><i id="xpf"></i></div></div>
   <div id="br"><div id="buffs"></div><div id="wname"></div><div id="ammo"></div><div id="dirtrow"></div><div id="dirt"><i id="dfill"></i></div></div>
 </div>
-<div id="tc"><div id="tjh"></div><div id="tj"><i id="tjk"></i></div><button class="tb" data-b="pause">II</button><button class="tb" data-b="fire">Fuego</button><button class="tb" data-b="ads">Mira</button><button class="tb" data-b="rel">Rec.</button><button class="tb" data-b="jump">Salto</button><button class="tb" data-b="crouch">Agach.</button><button class="tb" data-b="swap">Arma</button><button class="tb hid" data-b="use">Usar</button><button class="tb hid" data-b="clean">Limpiar</button><button class="tb hid" data-b="nv">VN</button></div>
+<div id="tc"><div id="tjh"></div><div id="tj"><i id="tjk"></i></div><button class="tb" data-b="pause" aria-label="Pausa"></button><button class="tb" data-b="fire" aria-label="Disparar"></button><button class="tb" data-b="ads" aria-label="Apuntar"></button><button class="tb" data-b="rel" aria-label="Recargar"></button><button class="tb" data-b="jump" aria-label="Saltar"></button><button class="tb" data-b="crouch" aria-label="Agacharse"></button><button class="tb" data-b="swap" aria-label="Cambiar de arma"></button><button class="tb hid" data-b="use" aria-label="Usar"></button><button class="tb hid" data-b="clean" aria-label="Limpiar el arma"></button><button class="tb hid" data-b="nv" aria-label="Visión nocturna"></button></div>
 <div id="rot">Gira el móvil<br>Se juega en horizontal</div>
 <div id="fade"></div>
 <div id="menu"><div id="mtitle"></div><div id="msub"></div><div id="mrows"></div><div id="mfoot"></div></div>
@@ -1069,7 +1072,19 @@ function note(t,sub){if(!FX)return;const d=document.createElement('div');d.class
 function pop(t,col){if(!FX)return;const p=$('#pops'),d=document.createElement('div');d.textContent=t;d.style.color=col||'#e3e8dc';p.appendChild(d);
   d.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.7},{opacity:0}],{duration:1100}).onfinish=()=>d.remove();while(p.children.length>4)p.firstChild.remove()}
 function tip(id,t,sub){if(S.tips[id])return;S.tips[id]=1;note(t,sub)}
-const TKN={E:'USAR',R:'REC.',C:'LIMPIAR',N:'VN'},kn=(k,p)=>lastDev==='pad'?p:lastDev==='touch'?TKN[k]:k,kk=(k,p)=>`<kbd>${kn(k,p)}</kbd>`;
+// iconos de los controles táctiles (SVG de 24x24, trazo del color del texto)
+const TI=(()=>{const v=p=>`<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;return{
+ pause:v('<path d="M8.5 5v14M15.5 5v14"/>'),
+ fire:v('<path d="M12 2c2.4 2.2 3.2 4.8 3.2 7.5V17H8.8V9.5C8.8 6.8 9.6 4.2 12 2z" fill="currentColor" stroke="none"/><rect x="8.2" y="18.2" width="7.6" height="3.4" rx=".9" fill="currentColor" stroke="none"/>'),
+ ads:v('<circle cx="12" cy="12" r="6.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r=".9" fill="currentColor"/>'),
+ rel:v('<path d="M20 12a8 8 0 1 1-2.7-6"/><path d="M20 3.5V9h-5.5"/><path d="M12 9.5v5" stroke-width="2.6"/>'),
+ jump:v('<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>'),
+ crouch:v('<path d="M6 8l6 6 6-6"/><path d="M5 19h14"/>'),
+ swap:v('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>'),
+ use:v('<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-1.4a6 6 0 0 1-4.8-2.4L4 15.5a1.6 1.6 0 0 1 2.5-2L9 16"/>'),
+ clean:v('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>'),
+ nv:v('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}})();
+const TKN={E:TI.use,R:TI.rel,C:TI.clean,N:TI.nv},kn=(k,p)=>lastDev==='pad'?p:lastDev==='touch'?TKN[k]:k,kk=(k,p)=>`<kbd>${kn(k,p)}</kbd>`;
 let padObj=null;
 function rumble(a,b,ms){if(lastDev!=='pad'||!padObj||!padObj.vibrationActuator)return;try{padObj.vibrationActuator.playEffect('dual-rumble',{duration:ms,strongMagnitude:a,weakMagnitude:b})}catch(e){}}
 
@@ -1230,7 +1245,7 @@ function updBots(dt){
 function rayBot(d,o,list){let best=null,bt=1e9,bh=false;const tc=rayCover(o,d);
   const hbk=HBM[hk('hb')];
   for(const b of bots){if(b.st!==1||b.team===0)continue;const s=b.type?1.25:1,ox=o.x-b.x,oz=o.z-b.z,oy0=o.y-b.y;let t=1e9,hd=false;
-    {const oy=oy0-1.68*s,bq=ox*d.x+oy*d.y+oz*d.z,cq=ox*ox+oy*oy+oz*oz-.0324*s*s*hbk*hbk,di=bq*bq-cq;if(di>=0){const q=-bq-Math.sqrt(di);if(q>0){t=q;hd=true}}}
+    {const oy=oy0-1.68*s,bq=ox*d.x+oy*d.y+oz*d.z,cq=ox*ox+oy*oy+oz*oz-(area===4?.0576:.0324)*s*s*hbk*hbk,di=bq*bq-cq;if(di>=0){const q=-bq-Math.sqrt(di);if(q>0){t=q;hd=true}}}
     {const a=d.x*d.x+d.z*d.z,b2=ox*d.x+oz*d.z,c2=ox*ox+oz*oz-.09*s*s*hbk*hbk,di=b2*b2-a*c2;if(a>1e-9&&di>=0){const q=(-b2-Math.sqrt(di))/a,y=oy0+d.y*q;if(q>0&&q<t&&y>.05-(hbk-1)*.3&&y<1.53*s+(hbk-1)*.3){t=q;hd=false}}}
     if(t<tc){if(list)list.push([b,hd]);if(t<bt){bt=t;best=b;bh=hd}}}
   return best?[best,bt,bh]:null}
@@ -1294,7 +1309,7 @@ const INC_KEY='operacionAceroIncremental1';
 const IM_MODES=[
  {id:'duel',name:'1 vs 1 · Gulag',cost:0,d:'Contrarreloj de 15 s en una arena diminuta. Cada baja cuenta: todos reaparecen 1 s después de morir. Encadena bajas sin morir para subir el multiplicador de dinero.'},
  {id:'sd',name:'Buscar y destruir · 1 vs 5',cost:1000,d:'3 rondas de 30 s. Tú solo contra cinco y con una sola vida por ronda: llega al objetivo, planta la bomba y defiéndela, o elimínalos a todos.'},
- {id:'ffa',name:'Contra todos',cost:4500,d:'Contrarreloj de 30 s: ocho tiradores en un patio. Gana quien más bajas tenga.'}];
+ {id:'ffa',name:'Contra todos',cost:4500,d:'Contrarreloj de 45 s: ocho tiradores en un patio. Gana quien más bajas tenga.'}];
 // armas: se reciclan de los otros modos (índice en WEAPONS); el daño por disparo va nivelado para que cada una sea mejor que la anterior
 const IM_WEAPONS=[
  {wi:0,cost:0,dmg:22,tag:'Pistola'},
@@ -1323,7 +1338,7 @@ const IM_STREAK=[1,1,1.25,1.5,2],imStreakMult=()=>1+(IM_STREAK[Math.min(im.ks,4)
 const HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
 // pagos base y dificultad de los bots por modo
 const IM_PAY={duel:{kill:25,hs:15,win:200},sd:{kill:50,hs:30,plant:100,rwin:100,win:300},ffa:{kill:40,hs:25,place:[400,250,120,40]}};
-const IM_TIME={duel:15,ffa:30},IM_SD_TIME=30,IM_DEAD=1,IM_RESPAWN=1;   // segundos: partida de 1 vs 1 · partida de contra todos · tiempo para plantar en cada ronda de S&D · muerte del jugador (animación y reaparición) · reaparición de los bots
+const IM_TIME={duel:15,ffa:45},IM_SD_TIME=30,IM_DEAD=1,IM_RESPAWN=1;   // segundos: partida de 1 vs 1 · partida de contra todos · tiempo para plantar en cada ronda de S&D · muerte del jugador (animación y reaparición) · reaparición de los bots
 const mmss=t=>{t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12,acc:.66,react:.4,fire:[.6,.6]},ffa:{hp:100,dmg:16,acc:.74,react:.28,fire:[.4,.5]}};
 // cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
@@ -1353,13 +1368,14 @@ function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*5
 function imRival(){const c=imMap.spawns.slice(0,2).sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz))[0];let x=c[0],z=c[1];for(let k=0;k<12;k++){const tx=c[0]+(rnd()-.5)*5;if(botOk(tx,c[1])){x=tx;break}}mkBot({team:1,x,z,rot:z<pz?PI:0,name:'Rival'}).react=.4}
 function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;imPlace(m.spawns[0][0],m.spawns[0][1],0);for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});im.bx=m.cx;im.bz=BGZ-10.5;imBombM.visible=false;imReady()}
 function imFfaBot(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1]})}
-function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],0);for(let i=1;i<8;i++)imFfaBot(i);imReady()}
+const imYawC=(x,z)=>Math.atan2(-(imMap.cx-x),-(BGZ-z));   // mirar hacia el centro de la arena
+function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],imYawC(q[0],q[1]));for(let i=1;i<8;i++)imFfaBot(i);imReady()}
 function imStart(){const I=S.inc;if(!I.um[I.mode])return;const q=IM_WEAPONS[I.wsel];
   area=4;imMapSet(I.mode);clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
   S.alt=IM_WEAPONS.map(w=>w.wi).filter(w=>S.own[w]&&w!==S.weapon).pop()||S.weapon;
   Object.assign(im,{on:true,dead:0,ks:0,spawnQ:[],mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:IM_TIME[I.mode]||0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
   if(I.mode==='duel')imRound();else if(I.mode==='sd')imSdSetup();else imFfaSetup();
-  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'30 segundos · gana quien tenga más bajas')}
+  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'45 segundos · gana quien tenga más bajas')}
 function imToLobby(){incSave();state='pause';wipeWorld();imPreview();hud();incLobby()}
 function incLobby(){state='pause';kb.w=kb.a=kb.s=kb.d=0;kb.fire=kb.ads=kb.crouch=kb.sprint=false;$('#mm').classList.remove('off');if(document.pointerLockElement)document.exitPointerLock();mmShow('lobby')}
 function startInc(isNew){if(isNew||!incP)incP=incFresh();cfgTo(incP);S=incP;mode='inc';started=false;wipeWorld();imPreview();hud();incSave();incLobby()}
@@ -1385,7 +1401,7 @@ function imKill(k,v,head){if(!im.on||im.state!=='play')return;const P=IM_PAY[im.
 function imPlayerDown(b){if(!im.on||im.state!=='play'||im.dead>0)return;im.ks=0;if(FX){sfx.down();$('#fade').animate([{opacity:1,background:'#400'},{opacity:0}],{duration:900})}
   imDeathStart();
   if(im.mode==='duel')imDuelKill(false);else if(im.mode==='sd')imSdEnd(false,'Has caído');else imScore(b.id,0)}
-function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);px=q[0];pz=q[1];php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
+function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);imPlace(q[0],q[1],imYawC(q[0],q[1]));php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
 // al morir: 1,5 s en tercera persona viendo caer a tu personaje (el reloj no corre)
 let imDeath=null;
 function imDeathStart(){imDeathClear();im.dead=IM_DEAD;kb.fire=false;gst='ready';const o=botObj('soldier');
@@ -1756,7 +1772,8 @@ function aimAssist(dt,act,snap){const aa=S.assist;let m=1;
 /* =============== CONTROLES TÁCTILES =============== */
 // joystick flotante en la mitad izquierda, arrastre para mirar en la derecha y botones; alimenta el mismo objeto «pad» que el mando
 const tc={mx:0,mz:0,fire:false,ads:false,adsP:false,sprint:false,slow:1,joy:-1,pts:new Map()},TC=$('#tc'),TJ=$('#tj'),TJK=$('#tjk'),TB={};
-TC.querySelectorAll('.tb').forEach(e=>TB[e.dataset.b]=e);
+TC.querySelectorAll('.tb').forEach(e=>{TB[e.dataset.b]=e;e.innerHTML=TI[e.dataset.b]});
+$('#keys .tk').innerHTML=`<h3>PANTALLA TÁCTIL</h3>Mitad izquierda: arrastra para moverte (lleva el dedo al tope hacia delante para correr)<br>Mitad derecha: arrastra para mirar · también puedes arrastrar sobre <kbd>${TI.fire}</kbd> (bala) para apuntar mientras disparas<br><kbd>${TI.ads}</kbd> apuntar · <kbd>${TI.rel}</kbd> recargar o desencasquillar · <kbd>${TI.swap}</kbd> arma anterior · <kbd>${TI.jump}</kbd> saltar · <kbd>${TI.crouch}</kbd> agacharse<br><kbd>${TI.use}</kbd> usar, <kbd>${TI.clean}</kbd> limpiar el arma y <kbd>${TI.nv}</kbd> visión nocturna aparecen cuando se pueden usar · <kbd>${TI.pause}</kbd> pausa`;
 const vmin=()=>Math.min(innerWidth,innerHeight)/100;
 function setTouch(){gesture=true;if(lastDev==='touch')return;lastDev='touch';document.body.classList.add('touch');$('#aaRow').style.display='';if(state==='menu')buildMenu()}
 function goFull(){try{const d=document.documentElement;if(document.fullscreenElement||!d.requestFullscreen)return;const p=d.requestFullscreen({navigationUI:'hide'});
