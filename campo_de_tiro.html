@@ -105,7 +105,8 @@ canvas#c.dead{filter:grayscale(.85) brightness(.85)}
 .pn>button{width:380px}.pn .info{font-size:12px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;max-width:440px;text-align:center}
 #pn-lobby{width:100%;gap:8px}
 #mm.lob #pbox{width:min(680px,96vw)}
-#pn-lobby .lbtabs{display:flex;gap:6px;width:100%}
+#pn-lobby .lbtabs{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+#pn-lobby .lbtabs button{flex:1 1 auto}.lbs.got b{color:var(--acc)}.lbs.got{border-color:#b9cf5a55}
 #pn-lobby button{outline:none}
 #pn-lobby .lbtabs button{flex:1;padding:10px 6px;font-size:13px;letter-spacing:3px;background:transparent;border:1px solid var(--line);text-transform:uppercase}
 #pn-lobby .lbtabs button.act{border-color:var(--acc);color:var(--acc)}
@@ -215,7 +216,7 @@ body.touch #keys{grid-template-columns:1fr}body.touch #keys>div{display:none}bod
   <div class="pn" id="pn-inc"><div class="info" id="incinfo"></div><button data-a="inccont" id="binccont">Continuar</button><button data-a="incnew">Nueva partida</button><button data-a="back">Volver</button></div>
   <div class="pn" id="pn-incnew"><p>Ya hay una partida del modo Incremental guardada. Si empiezas una nueva se borrará y no se puede deshacer.</p><button data-a="back">Cancelar</button><button data-a="incnewyes">Borrar y empezar de cero</button></div>
   <div class="pn" id="pn-lobby"><div class="info" id="lbinfo"></div><button data-a="lbstart" id="lbstart" class="go"></button>
-    <div class="lbtabs"><button data-a="lbtab:modes">Modos</button><button data-a="lbtab:weapons">Armas</button><button data-a="lbtab:hacks">Hacks</button><button data-a="lbtab:stats">Stats</button></div>
+    <div class="lbtabs"><button data-a="lbtab:modes">Modos</button><button data-a="lbtab:weapons">Armas</button><button data-a="lbtab:hacks">Hacks</button><button data-a="lbtab:missions">Misiones</button><button data-a="lbtab:profile">Perfil</button></div>
     <div id="lblist"></div><div class="info" id="lbmsg"></div><button data-a="set">Ajustes</button><button data-a="lbquit">Salir al menú principal</button></div>
   <div class="pn" id="pn-pause"><div class="info" id="pinfo"></div><button data-a="resume">Continuar</button><button data-a="leave" id="bleave" style="display:none">Abandonar partida y volver al lobby</button><button data-a="set">Ajustes</button><button data-a="quit">Salir al menú principal</button></div>
   <div class="pn" id="pn-set">
@@ -1428,7 +1429,7 @@ const IM_TIME={duel:15,ffa:45,king:45,waves:45,snip:30},IM_SD_TIME=30,IM_DEAD=1,
 const mmss=t=>{t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12,acc:.66,react:.4,fire:[.6,.6]},ffa:{hp:100,dmg:16,acc:.74,react:.28,fire:[.4,.5]},king:{hp:100,dmg:16,acc:.74,react:.28,fire:[.4,.5]},waves:{hp:70,dmg:12,acc:.62,react:.4,fire:[.6,.6]},snip:{hp:100,dmg:45,acc:.62,react:.5,fire:[1.1,.9]}};
 // cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
-const imOwned=()=>IM_WEAPONS.filter(q=>S.own[q.wi]).length,imMult=()=>1+.25*Math.max(0,imOwned()-1);
+const imOwned=()=>IM_WEAPONS.filter(q=>S.own[q.wi]).length,imMult=()=>(1+.25*Math.max(0,imOwned()-1))*(1+.1*((S.inc&&S.inc.pr&&S.inc.pr.stars)||0))*(1+.02*(S.inc&&S.inc.ach?Object.keys(S.inc.ach).length:0));
 // dificultad suave: crece con las armas y los hacks que tengas; los bots nunca pasan de ~60 % más vida ni de +10 puntos de puntería
 const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/(IM_WEAPONS.length-1)*.6+Math.min(h,40)/40*.4)};
 const imc=()=>{const c=IMC[im.mode]||IMC.duel,d=imDiff();return{hp:Math.round(c.hp*(1+.6*d)),dmg:c.dmg*(1+.2*d),acc:Math.min(.88,c.acc+.1*d),react:c.react*(1-.3*d),fire:[c.fire[0]*(1-.2*d),c.fire[1]*(1-.2*d)]}};
@@ -1437,9 +1438,10 @@ const hkl=id=>S.inc&&S.inc.hk[id]&&!S.inc.off[id]?S.inc.hk[id]:0,hk=id=>area===4
 const im={on:false,ks:0,spawnQ:[],tmp:null,crateT:0,wave:1,waveT:0,cleared:0,king:-1,kacc:0,deaths:0,door:{open:false,t:0},persById:{},mode:'duel',state:'count',t:0,clock:0,gain:0,round:1,sc:[0,0],goal:3,limit:240,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0},bx:0,bz:0,cnt:0};
 let imMap=null,incP=null;
 IM_MAPS.king=IM_MAPS.ffa;IM_MAPS.waves=IM_MAPS.ffa;IM_MAPS.snip=['snip','snip2'];   // rey y oleadas juegan en los mapas de contra todos
-const incFresh=()=>Object.assign(fresh(),{inc:{mode:'duel',um:{duel:1,sd:0,ffa:0,king:0,waves:0,snip:0},wsel:0,map:{},hk:{},off:{},st:{matches:0,wins:0,kills:0,hs:0,plants:0}}});
+const ST0=()=>({matches:0,wins:0,kills:0,hs:0,plants:0,maxStreak:0,bangKills:0,flawless:0,waves:0,kingKills:0,deaths:0,earned:0,duelWins:0,sdWins:0,ffaWins:0,kingWins:0,wavesWins:0,snipWins:0});
+const incFresh=()=>Object.assign(fresh(),{inc:{mode:'duel',um:{duel:1,sd:0,ffa:0,king:0,waves:0,snip:0},wsel:0,map:{},hk:{},off:{},st:ST0(),ms:{},ach:{},pr:{stars:0,count:0,run:0}}});
 function incSave(){if(!incP)return;try{localStorage.setItem(INC_KEY,JSON.stringify(incP))}catch(e){}}
-function incLoad(){try{const d=JSON.parse(localStorage.getItem(INC_KEY));if(!d||!d.inc)return null;const f=incFresh(),q=Object.assign(f,d);q.inc=Object.assign(f.inc,d.inc);q.inc.um=Object.assign({duel:1,sd:0,ffa:0,king:0,waves:0,snip:0},d.inc.um);q.inc.um.duel=1;q.inc.map=d.inc.map||{};q.inc.hk=d.inc.hk||{};q.inc.off=d.inc.off||{};q.inc.st=Object.assign({matches:0,wins:0,kills:0,hs:0,plants:0},d.inc.st||{});
+function incLoad(){try{const d=JSON.parse(localStorage.getItem(INC_KEY));if(!d||!d.inc)return null;const f=incFresh(),q=Object.assign(f,d);q.inc=Object.assign(f.inc,d.inc);q.inc.um=Object.assign({duel:1,sd:0,ffa:0,king:0,waves:0,snip:0},d.inc.um);q.inc.um.duel=1;q.inc.map=d.inc.map||{};q.inc.hk=d.inc.hk||{};q.inc.off=d.inc.off||{};q.inc.st=Object.assign(ST0(),d.inc.st||{});q.inc.ms=d.inc.ms||{};q.inc.ach=d.inc.ach||{};q.inc.pr=Object.assign({stars:0,count:0,run:0},d.inc.pr||{});
   for(const k of['sk','tips','arm','att','dirtW','claim','pas'])q[k]=d[k]||{};q.stat=Object.assign(fresh().stat,d.stat||{});q.own={0:1};for(const w of IM_WEAPONS)if(d.own&&d.own[w.wi])q.own[w.wi]=1;
   q.inc.wsel=Math.max(0,Math.min(IM_WEAPONS.length-1,q.inc.wsel|0));if(!q.own[IM_WEAPONS[q.inc.wsel].wi])q.inc.wsel=0;if(!IM_MODES.some(m=>m.id===q.inc.mode&&q.inc.um[m.id]))q.inc.mode='duel';
   q.weapon=IM_WEAPONS[q.inc.wsel].wi;q.alt=0;q.coin=q.coin||{w:0,l:0};return q}catch(e){return null}}
@@ -1458,7 +1460,7 @@ function imPreview(){const I=S.inc,l=IM_MAPS[I.mode],i=(I.map||{})[I.mode];area=
 let imShield=0;
 function imFull(){php=maxHp();imShield=SHD[hk('shield')]}
 function imHit(x){if(imShield>0){const a=Math.min(imShield,x);imShield-=a;x-=a}return x}
-function imPay(m,why){m=Math.round(m*CSH[hk('cash')]*imMult()*imStreakMult());S.money+=m;im.gain+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
+function imPay(m,why){m=Math.round(m*CSH[hk('cash')]*imMult()*imStreakMult());S.money+=m;im.gain+=m;S.inc.st.earned+=m;S.inc.pr.run+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
 function imReady(t){imFull();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=t||3;im.cnt=4}
 function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*1.6,P=m.spawns[0],E=m.spawns[1],a=P[0]+j(),b=P[1]+j(),c=E[0]+j(),d=E[1]+j();imPlace(a,b,imYawC(a,b));imMkRival(c,d);if(fast){imFull();S.ammo=magSize();gst='ready';pInv=1}else imReady(3)}
 // el rival nuevo sale en el extremo más lejano de ti
@@ -1482,7 +1484,7 @@ function imEnd(win,why){if(im.state==='end')return;const I=S.inc,P=IM_PAY[im.mod
   else if(im.mode==='waves'){const cl=im.cleared||0;win=cl>=3;if(win)bonus=P.win;sub=`Oleadas despejadas: ${cl}`;I.st.waves+=cl}
   else if(imB()==='duel'){win=im.sc[0]>im.sc[1];draw=im.sc[0]===im.sc[1];bonus=win?P.win:draw?P.win/2:0;sub=`Bajas ${im.sc[0]} – ${im.sc[1]}`}
   else if(win)bonus=P.win;
-  if(win){I.st.wins++;I.st[im.mode+'Wins']=(I.st[im.mode+'Wins']||0)+1;if(im.deaths===0)I.st.flawless++}if(bonus)imPay(bonus,'bonus de partida');imTmpEnd();
+  if(win){I.st.wins++;I.st[im.mode+'Wins']=(I.st[im.mode+'Wins']||0)+1;if(im.deaths===0)I.st.flawless++}if(bonus)imPay(bonus,'bonus de partida');imTmpEnd();imAch();
   im.state='end';im.t=7;im.cnt=0;im.spawnQ=[];if(win)slowMo(2.2);for(const b of bots)b.tg=null;if(FX)sfx.radio();
   banner(win?'Victoria':draw?'Empate':'Derrota',(sub?sub+' · ':'')+'Ganado: $'+fmt(im.gain));incSave()}
 function imDuelKill(win){if(im.state!=='play')return;im.sc[win?0:1]++;if(win){php=Math.min(maxHp(),php+40);im.spawnQ.push({t:IM_RESPAWN,id:0})}}
@@ -1597,10 +1599,41 @@ function imMech(dt){const m=imMap;
   if(im.mode==='king'&&im.king===0&&!(deadT>0)){im.kacc+=dt;if(im.kacc>=1){im.kacc-=1;imPay(IM_PAY.king.reign,'rey')}}
   if(im.mode==='waves'){if(im.waveT>0){im.waveT-=dt;if(im.waveT<=0)imWaveSpawn()}
     else if(!bots.some(b=>b.st===1)){imPay(IM_PAY.waves.wave*im.wave,'oleada '+im.wave);im.cleared=im.wave;im.wave++;im.waveT=1.5;note('Oleada despejada','La siguiente llega enseguida')}}}
+// ---------- misiones (infinitas, cada cobro sube el objetivo), logros (únicos, +2 % de dinero) y prestigio ----------
+const IM_MS=[
+ {id:'kills',key:'kills',t:n=>`Consigue ${fmt(n)} bajas`,n:k=>Math.round(25*Math.pow(2.2,k)),rw:k=>Math.round(250*Math.pow(2,k))},
+ {id:'hs',key:'hs',t:n=>`Haz ${fmt(n)} headshots`,n:k=>Math.round(10*Math.pow(2.2,k)),rw:k=>Math.round(300*Math.pow(2,k))},
+ {id:'wins',key:'wins',t:n=>`Gana ${fmt(n)} partidas`,n:k=>Math.round(3*Math.pow(1.9,k)),rw:k=>Math.round(400*Math.pow(2,k))},
+ {id:'plants',key:'plants',t:n=>`Planta la bomba ${fmt(n)} veces`,n:k=>Math.round(3*Math.pow(2,k)),rw:k=>Math.round(300*Math.pow(2,k))},
+ {id:'streak',key:'maxStreak',t:n=>`Alcanza una racha de ${n} bajas`,n:k=>3+2*k,rw:k=>Math.round(500*Math.pow(1.8,k))},
+ {id:'bang',key:'bangKills',t:n=>`Mata a ${fmt(n)} enemigos a través de paredes`,n:k=>Math.round(5*Math.pow(2,k)),rw:k=>Math.round(600*Math.pow(2,k))},
+ {id:'flaw',key:'flawless',t:n=>`Gana ${n===1?'una partida':fmt(n)+' partidas'} sin morir`,n:k=>1+2*k,rw:k=>Math.round(800*Math.pow(1.8,k))},
+ {id:'waves',key:'waves',t:n=>`Despeja ${fmt(n)} oleadas`,n:k=>Math.round(3*Math.pow(2,k)),rw:k=>Math.round(500*Math.pow(2,k))},
+ {id:'king',key:'kingKills',t:n=>`Mata al rey ${fmt(n)} veces`,n:k=>Math.round(3*Math.pow(2,k)),rw:k=>Math.round(500*Math.pow(2,k))},
+ {id:'earn',key:'earned',t:n=>`Gana $${fmt(n)} en total`,n:k=>Math.round(5000*Math.pow(4,k)),rw:k=>Math.round(1000*Math.pow(3,k))}];
+const IM_ACH=[
+ {id:'a1',n:'Primera sangre',d:'Consigue tu primera baja',ok:st=>st.kills>=1},
+ {id:'a2',n:'Ojo de águila',d:'50 headshots',ok:st=>st.hs>=50},
+ {id:'a3',n:'Imparable',d:'Racha de 10 bajas',ok:st=>st.maxStreak>=10},
+ {id:'a4',n:'Coleccionista',d:'Ten las 12 armas a la vez',ok:()=>imOwned()>=IM_WEAPONS.length},
+ {id:'a5',n:'Millonario',d:'Gana $1M en total',ok:st=>st.earned>=1e6},
+ {id:'a6',n:'Demoledor',d:'25 bajas a través de paredes',ok:st=>st.bangKills>=25},
+ {id:'a7',n:'Sin rasguños',d:'Gana 3 partidas sin morir',ok:st=>st.flawless>=3},
+ {id:'a8',n:'Artificiero',d:'Planta 20 bombas',ok:st=>st.plants>=20},
+ {id:'a9',n:'Regicida',d:'Mata 10 veces al rey',ok:st=>st.kingKills>=10},
+ {id:'a10',n:'Superviviente',d:'Despeja 15 oleadas',ok:st=>st.waves>=15},
+ {id:'a11',n:'Todoterreno',d:'Gana al menos una vez en cada modo',ok:st=>st.duelWins&&st.sdWins&&st.ffaWins&&st.kingWins&&st.wavesWins&&st.snipWins},
+ {id:'a12',n:'Hacker total',d:'30 niveles de hacks a la vez',ok:(st,I)=>Object.values(I.hk).reduce((a,b)=>a+b,0)>=30},
+ {id:'a13',n:'Leyenda',d:'Haz tu primer prestigio',ok:(st,I)=>I.pr.count>=1},
+ {id:'a14',n:'Colador',d:'1.000 bajas en total',ok:st=>st.kills>=1000}];
+function imAch(){const I=S.inc;for(const a of IM_ACH){if(I.ach[a.id]||!a.ok(I.st,I))continue;I.ach[a.id]=1;lbMsg='Logro desbloqueado: '+a.n;if(FX){sfx.radio();note('Logro: '+a.n,a.d+' · +2 % de dinero')}}}
+// prestigio: al ganar $1M en la carrera puedes reiniciar a cambio de estrellas (+10 % de dinero permanente cada una)
+const IM_PRESTIGE=1e6,imStars=()=>{const r=S.inc.pr.run;return r>=IM_PRESTIGE?Math.floor(Math.sqrt(r/250000)):0};
+function imPrestige(g){const I=S.inc;I.pr.stars+=g;I.pr.count++;I.pr.run=0;S.money=0;S.own={0:1};S.weapon=0;S.alt=0;I.wsel=0;I.hk={};I.off={};I.um={duel:1,sd:0,ffa:0,king:0,waves:0,snip:0};I.mode='duel';S.ammo=magSize();gst='ready';if(FX)sfx.radio();lbMsg=`Prestigio: +${g} ★ · dinero ×${+imMult().toFixed(2)} para siempre`;imAch();imPreview()}
 // ---------- lobby ----------
-let lbTab='modes',lbMsg='';
+let lbTab='modes',lbMsg='',lbConfirm=false;
 function lobbyRender(){const I=S.inc,nm=imMn(I.mode),wp=IM_WEAPONS[I.wsel],nh=IM_HACKS.filter(h=>hkl(h.id)).length;
-  $('#lbinfo').innerHTML=`<span class="mny">$${fmt(S.money)}<small>×${+(imMult()*CSH[hkl('cash')]).toFixed(2)}</small></span>`;
+  $('#lbinfo').innerHTML=`<span class="mny">$${fmt(S.money)}<small>×${+(imMult()*CSH[hkl('cash')]).toFixed(2)}${I.pr.stars?' · '+I.pr.stars+' ★':''}</small></span>`;
   $('#lbstart').innerHTML=`▶ Iniciar partida<small>${nm.name} · ${WEAPONS[wp.wi].name} · ${nh} hack${nh===1?'':'s'} activo${nh===1?'':'s'}</small>`;
   document.querySelectorAll('#pn-lobby .lbtabs button').forEach(b=>b.classList.toggle('act',b.dataset.a==='lbtab:'+lbTab));
   const row=(a,t,d,s,c,tg,ind)=>`<div class="lbrow"${ind?` style="margin-left:${ind*16}px"`:''}><button class="lbm ${c||''}" data-a="${a}"><span><b>${t}</b><small>${d}</small></span><span class="st">${s}</span></button>${tg||''}</div>`;
@@ -1608,14 +1641,21 @@ function lobbyRender(){const I=S.inc,nm=imMn(I.mode),wp=IM_WEAPONS[I.wsel],nh=IM
   if(lbTab==='modes')R=IM_MODES.map(m=>{const un=I.um[m.id],sel=I.mode===m.id;return row('lb:m:'+m.id,m.name,m.d,sel?'elegido':un?'elegir':'$'+fmt(m.cost),sel?'sel ok':un||S.money>=m.cost?'ok':'lock')});
   else if(lbTab==='weapons')R=IM_WEAPONS.map((q,i)=>{const w=WEAPONS[q.wi],own=S.own[q.wi],pv=i===0||S.own[IM_WEAPONS[i-1].wi],cur=I.wsel===i;
     return row('lb:w:'+i,w.name,`${q.tag} · ${w.auto?'automática':'tiro a tiro'} · ${w.rate}/s · cargador ${w.mag} · daño ${q.dmg} · headshot: ${Math.ceil(1/(q.hf*w.pel)-1e-6)} tiro${q.hf*w.pel>=1?'':'s'}`+(i?` · dinero ×${+(1+.25*i).toFixed(2)} al tenerla`:'')+(own||pv?'':' · consigue antes la anterior'),cur?'equipada':own?'equipar':pv?'$'+fmt(q.cost):'bloqueada',cur?'sel ok':own||(pv&&S.money>=q.cost)?'ok':'lock')});
-  else if(lbTab==='stats'){const st=I.st;R=[['Partidas',st.matches],['Victorias',st.wins],['Bajas',st.kills],['Headshots',st.hs],['Bombas plantadas',st.plants],['Dificultad de los bots',Math.round(imDiff()*100)+' %'],['Dinero por armas','×'+imMult()],['Mercado negro','×'+CSH[hkl('cash')]]].map(r=>`<div class="lbs"><span>${r[0]}</span><b>${r[1]}</b></div>`)}
+  else if(lbTab==='missions')R=IM_MS.map(m=>{const k=I.ms[m.id]||0,n=m.n(k),v=Math.min(I.st[m.key]||0,n),ok=v>=n;return row('lb:ms:'+m.id,m.t(n),`Progreso ${fmt(v)} / ${fmt(n)} · recompensa $${fmt(m.rw(k))}`+(k?` · completada ${k} vez${k>1?'es':''}`:''),ok?'cobrar':Math.floor(v/n*100)+' %',ok?'sel ok':'')});
+  else if(lbTab==='profile'){const st=I.st,g=imStars(),can=g>0,na=Object.keys(I.ach).length;
+    R=[row('lb:pr','Prestigio · '+I.pr.stars+' ★',can?(lbConfirm?'Pulsa de nuevo para confirmar: pierdes dinero, armas, hacks y modos desbloqueados. Conservas estadísticas, misiones y logros.':`Reinicia la carrera y gana ${g} ★ (+10 % de dinero permanente cada una).`):`Gana $${fmt(IM_PRESTIGE)} en una carrera para poder hacer prestigio (llevas $${fmt(I.pr.run)}).`,can?'+'+g+' ★':'bloqueado',can?'sel ok':'lock')];
+    R.push(...[['Partidas',st.matches],['Victorias',st.wins],['Bajas',st.kills],['Headshots',st.hs],['Racha máxima',st.maxStreak],['Bajas a través de paredes',st.bangKills],['Partidas sin morir',st.flawless],['Bombas plantadas',st.plants],['Oleadas despejadas',st.waves],['Reyes abatidos',st.kingKills],['Muertes',st.deaths],['Dinero ganado en total','$'+fmt(st.earned)],['Dificultad de los bots',Math.round(imDiff()*100)+' %'],['Dinero · armas','×'+(1+.25*Math.max(0,imOwned()-1))],['Dinero · prestigio','×'+(1+.1*I.pr.stars).toFixed(1)],['Dinero · logros','×'+(1+.02*na).toFixed(2)]].map(r=>`<div class="lbs"><span>${r[0]}</span><b>${r[1]}</b></div>`));
+    R.push(`<div class="lbs" style="margin-top:6px"><span>Logros</span><b>${na} / ${IM_ACH.length}</b></div>`);R.push(...IM_ACH.map(a=>`<div class="lbs ${I.ach[a.id]?'got':''}"><span>${a.n} · ${a.d}</span><b>${I.ach[a.id]?'✓':'—'}</b></div>`))}
   else R=IM_HACKS.map(h=>{const l=I.hk[h.id]||0,rq=!h.req||(I.hk[h.req[0]]||0)>=h.req[1],mx=l>=h.max,on=!I.off[h.id],rn=h.req?IM_HACKS.find(x=>x.id===h.req[0]).n:'';
     const d=!rq?`Requiere: ${rn}${h.req[1]>1?' nivel '+h.req[1]:''}`:mx?h.fx[l-1]:l?`Ahora: ${h.fx[l-1]} · Siguiente: ${h.fx[l]}`:h.fx[0];
     return row('lb:h:'+h.id,h.n+(h.max>1?` · ${l}/${h.max}`:''),d,!rq?'bloqueado':mx?(on?'activo':'apagado'):'$'+fmt(h.cost[l]),!rq?'lock':mx?(on?'sel ok':''):S.money>=h.cost[l]?'ok':'lock',l?`<button class="lbt ${on?'on':''}" data-a="lb:t:${h.id}">${on?'ON':'OFF'}</button>`:'',h.tier)});
   if(lbTab==='modes'){const l=IM_MAPS[I.mode],i=I.map[I.mode];R.push(row('lb:map','Mapa · '+(i>=0&&i<l.length?IMAPS[l[i]].name:'Aleatorio'),`${l.length} mapas para este modo. Toca para cambiar de mapa o dejarlo aleatorio.`,'cambiar','ok'))}
+  {const c=IM_MS.filter(m=>(I.st[m.key]||0)>=m.n(I.ms[m.id]||0)).length,t=document.querySelector('#pn-lobby [data-a="lbtab:missions"]');if(t)t.textContent='Misiones'+(c?' · '+c:'')}
   $('#lblist').innerHTML=R.join('');$('#lbmsg').textContent=lbMsg||(lastDev==='touch'?'Toca una opción para elegirla o comprarla':lastDev==='pad'?'◀ ▶ cambiar de pestaña · A elegir o comprar':'A / D: cambiar de pestaña · Enter o clic: elegir o comprar');mmFocus()}
-function lobbyAct(a){const I=S.inc,p=a.split(':');lbMsg='';
-  if(p[1]==='map'){const n=IM_MAPS[I.mode].length,c=I.map[I.mode];I.map[I.mode]=c>=0&&c+1<n?c+1:c>=0?-1:0;sfx.ui();imPreview()}
+function lobbyAct(a){const I=S.inc,p=a.split(':');lbMsg='';if(p[1]!=='pr')lbConfirm=false;
+  if(p[1]==='ms'){const m=IM_MS.find(x=>x.id===p[2]),k=I.ms[m.id]||0,n=m.n(k);if((I.st[m.key]||0)>=n){const rw=m.rw(k);S.money+=rw;I.ms[m.id]=k+1;sfx.uiOk();lbMsg='Misión cobrada: '+m.t(n)+' · +$'+fmt(rw)}else{sfx.err();lbMsg='Aún no has completado esa misión'}}
+  else if(p[1]==='pr'){const g=imStars();if(!g){sfx.err();lbMsg='Necesitas ganar $'+fmt(IM_PRESTIGE)+' en una carrera'}else if(!lbConfirm){lbConfirm=true;sfx.ui()}else{lbConfirm=false;imPrestige(g)}}
+  else if(p[1]==='map'){const n=IM_MAPS[I.mode].length,c=I.map[I.mode];I.map[I.mode]=c>=0&&c+1<n?c+1:c>=0?-1:0;sfx.ui();imPreview()}
   else if(p[1]==='m'){const m=imMn(p[2]);if(I.um[m.id]){I.mode=m.id;sfx.uiOk()}else if(S.money>=m.cost){S.money-=m.cost;I.um[m.id]=1;I.mode=m.id;sfx.uiOk();lbMsg='Modo desbloqueado: '+m.name}else{sfx.err();lbMsg='Te faltan $'+fmt(m.cost-S.money)}imPreview()}
   else if(p[1]==='w'){const i=+p[2],q=IM_WEAPONS[i];if(S.own[q.wi]){I.wsel=i;equip(q.wi);sfx.uiOk()}else if(!S.own[IM_WEAPONS[i-1].wi]){sfx.err();lbMsg='Consigue antes '+WEAPONS[IM_WEAPONS[i-1].wi].name}
     else if(S.money>=q.cost){S.money-=q.cost;S.own[q.wi]=1;I.wsel=i;equip(q.wi);sfx.uiOk();lbMsg='Arma comprada: '+WEAPONS[q.wi].name}else{sfx.err();lbMsg='Te faltan $'+fmt(q.cost-S.money)}}
@@ -1623,7 +1663,7 @@ function lobbyAct(a){const I=S.inc,p=a.split(':');lbMsg='';
     if(p[1]==='t'||(l>=h.max&&rq)){if(l){I.off[h.id]=!I.off[h.id];sfx.ui()}}
     else if(!rq){sfx.err();lbMsg='Requiere: '+IM_HACKS.find(x=>x.id===h.req[0]).n}
     else if(S.money>=h.cost[l]){S.money-=h.cost[l];I.hk[h.id]=l+1;delete I.off[h.id];sfx.uiOk();lbMsg='Hack instalado: '+h.n+' · '+h.fx[l]}else{sfx.err();lbMsg='Te faltan $'+fmt(h.cost[l]-S.money)}}
-  incSave();lobbyRender()}
+  imAch();incSave();lobbyRender()}
 
 /* =============== ARMA =============== */
 function dirVec(sp,out){const a=rnd()*6.283,r=Math.sqrt(rnd())*sp,y=yaw+Math.cos(a)*r,p=pitch+kick+Math.sin(a)*r,cp=Math.cos(p);return out.set(-Math.sin(y)*cp,Math.sin(p),-Math.cos(y)*cp)}
@@ -1875,7 +1915,7 @@ function mmShow(pn){if(pn==='set'){if(mmPanel!=='set')mmPrev=mmPanel;syncSet()}m
   $('#pinfo').textContent={sv:'Supervivencia',mp:'Multijugador · Contra todos',st:'Historia · Asalto a la mansión',inc:'Incremental · '+(im.on?imMn(im.mode).name:'Lobby')}[mode]||'';mmFocus()}
 function mmMove(d){const n=mmItems().length;if(!n)return;mmSel=(mmSel+d+n)%n;sfx.ui();mmFocus()}
 function mmAct(){const e=mmItems()[mmSel];if(!e)return;if(e.tagName==='BUTTON')e.click();else if(e.type==='checkbox'){e.checked=!e.checked;e.dispatchEvent(new Event('change'));sfx.ui()}}
-function mmAdj(d){if(mmPanel==='lobby'){const T=['modes','weapons','hacks','stats'],i=Math.max(0,Math.min(3,T.indexOf(lbTab)+d));if(T[i]!==lbTab){lbTab=T[i];sfx.ui();lobbyRender()}return}
+function mmAdj(d){if(mmPanel==='lobby'){const T=['modes','weapons','hacks','missions','profile'],i=Math.max(0,Math.min(4,T.indexOf(lbTab)+d));if(T[i]!==lbTab){lbTab=T[i];sfx.ui();lobbyRender()}return}
   const e=mmItems()[mmSel];if(!e||e.type!=='range')return;e.value=Math.max(+e.min,Math.min(+e.max,+e.value+d*5));e.dispatchEvent(new Event('input'));sfx.ui()}
 function mmBack(){if(mmPanel==='pause')startPlay();else if(mmPanel==='set'){mmShow(mmPrev);sfx.ui()}else if(mmPanel==='lobby')toMenu();else if(mmPanel!=='main'){mmShow('main');sfx.ui()}}
 function lock(){const p=canvas.requestPointerLock&&canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}
@@ -1994,7 +2034,7 @@ requestAnimationFrame(loop);
 window.G={get S(){return S},set S(v){S=v},update,render,hud,tryFire,keyR,startClean,startReload,buyCal,buyW,buyAtt,buyArm,equip,swapW,buySkill,buyPas,claim,targets,bots,WEAPONS,ATT,ARM,CLS,SK,CH,PAS,CAMOS,COV,skCost,calCost,pasCost,shotDmg,magSize,tArmor,tHP,tReward,fresh,resetRun,medalsFor,
   chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
   get flipT(){return flipT},get gun(){return gun},raw(){renderer.render(scene,camera)},get gst(){return gst},get state(){return state},get area(){return area},get php(){return php},set php(v){php=v},get p(){return{px,pz,yaw,area}},setFX(v){FX=v},play(){if(mode==='menu')mode='sv';started=true;state='play';$('#mm').classList.add('off')},
-  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,imZoneR,imMech,PERS,IM_BASE,get imDeath2(){return im.tmp},imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},get imShield(){return imShield},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
+  pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,imStars,imMult,IM_MS,IM_ACH,imAch,imPrestige,imZoneR,imMech,PERS,IM_BASE,get imDeath2(){return im.tmp},imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},get imShield(){return imShield},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
   aim(t,off,h){const dx=t.x+(off||0)-px,dy=(h!==undefined?h:t.y)-eyeH(),dz=t.z-pz;yaw=Math.atan2(-dx,-dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));kick=0;bloom=0;moving=0}};
 })();
 </script>
