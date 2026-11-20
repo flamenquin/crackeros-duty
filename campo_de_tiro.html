@@ -163,7 +163,8 @@ body.touch #keys{grid-template-columns:1fr}body.touch #keys>div{display:none}bod
 @media (max-height:560px){#mm h1{font-size:21px;letter-spacing:7px;margin-bottom:12px}#mm h1 small{font-size:9px;letter-spacing:4px}
  .pn{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:7px}.pn>button{width:min(300px,44vw);padding:9px 10px;font-size:12.5px;letter-spacing:2px}.pn>label,#pn-set>label{width:min(300px,44vw);padding:7px 10px;font-size:11px;letter-spacing:1px}
  .pn input[type=range]{width:100px}.pn .info,.pn p{width:100%;max-width:none;text-align:center;font-size:11.5px}
- #pn-lobby{display:grid;grid-template-columns:minmax(210px,36%) 1fr;grid-template-rows:auto auto auto auto auto 1fr;gap:6px 12px;align-items:start;width:100%;padding:10px 12px}
+ #pn-lobby.on{display:grid}
+ #pn-lobby{grid-template-columns:minmax(210px,36%) 1fr;grid-template-rows:auto auto auto auto auto 1fr;gap:6px 12px;align-items:start;width:100%;padding:10px 12px}
  #mm.lob #pbox{width:min(940px,96vw)}
  #pn-lobby>#lbinfo{grid-column:1;grid-row:1}#pn-lobby>#lbstart{grid-column:1;grid-row:2}#pn-lobby>.lbtabs{grid-column:1;grid-row:3}#pn-lobby>#lbmsg{grid-column:1;grid-row:4}#pn-lobby>[data-a=set]{grid-column:1;grid-row:5}#pn-lobby>[data-a=lbquit]{grid-column:1;grid-row:6;align-self:start}
  #pn-lobby>#lblist{grid-column:2;grid-row:1/7;max-height:calc(100vh - 36px)}#pn-lobby>button{width:100%;padding:8px 10px;font-size:12px;letter-spacing:2px}#pn-lobby>button.go{font-size:14px;letter-spacing:3px;padding:10px}#pn-lobby .lbtabs button{padding:7px 4px;font-size:11px;letter-spacing:1.5px}#pn-lobby .info{text-align:left;font-size:10.5px}
@@ -1290,9 +1291,9 @@ function travel(a){
 // Partidas contra bots en mapas pequeños. El dinero que ganas desbloquea modos, armas y una rama de hacks.
 const INC_KEY='operacionAceroIncremental1';
 const IM_MODES=[
- {id:'duel',name:'1 vs 1 · Gulag',cost:0,d:'Arena diminuta. Mejor de 5: gana el primero que llegue a 3 rondas.'},
- {id:'sd',name:'Buscar y destruir · 1 vs 5',cost:1000,d:'Tú solo contra cinco, con una sola vida. Planta la bomba y defiéndela 30 s, o elimínalos a todos.'},
- {id:'ffa',name:'Contra todos',cost:4500,d:'Ocho tiradores en un patio. Gana quien llegue antes a 15 bajas (o más tenga a los 4 minutos).'}];
+ {id:'duel',name:'1 vs 1 · Gulag',cost:0,d:'Arena diminuta, 15 minutos. Cada baja cuenta y reapareces al instante: gana quien tenga más al acabar el tiempo.'},
+ {id:'sd',name:'Buscar y destruir · 1 vs 5',cost:1000,d:'3 rondas, tú solo contra cinco y con una sola vida por ronda. Planta la bomba y defiéndela 30 s, o elimínalos a todos.'},
+ {id:'ffa',name:'Contra todos',cost:4500,d:'Ocho tiradores en un patio, 8 minutos. Gana quien más bajas tenga al acabar el tiempo.'}];
 // armas: se reciclan de los otros modos (índice en WEAPONS); el daño por disparo va nivelado para que cada una sea mejor que la anterior
 const IM_WEAPONS=[
  {wi:0,cost:0,dmg:22,tag:'Pistola'},
@@ -1317,9 +1318,15 @@ const IM_HACKS=[
  {id:'trig',n:'Triggerbot',max:1,cost:[35000],req:['aim',1],tier:3,fx:['Dispara solo en cuanto tienes a un enemigo en la mira']}];
 const HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
 // pagos base y dificultad de los bots por modo
-const IM_PAY={duel:{kill:60,hs:40,win:150},sd:{kill:50,hs:30,plant:100,win:400},ffa:{kill:30,hs:20,place:[600,350,200,60]}};
+const IM_PAY={duel:{kill:30,hs:20,win:500},sd:{kill:50,hs:30,plant:100,rwin:100,win:300},ffa:{kill:30,hs:20,place:[600,350,200,60]}};
+const IM_TIME={duel:900,ffa:480};
+const mmss=t=>{t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12,acc:.66,react:.4,fire:[.6,.6]},ffa:{hp:100,dmg:16,acc:.74,react:.28,fire:[.4,.5]}};
-const imc=()=>IMC[im.mode]||IMC.duel;
+// cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
+const imOwned=()=>IM_WEAPONS.filter(q=>S.own[q.wi]).length,imMult=()=>1+.25*Math.max(0,imOwned()-1);
+// dificultad suave: crece con las armas y los hacks que tengas; los bots nunca pasan de ~60 % más vida ni de +10 puntos de puntería
+const imDiff=()=>{const I=S.inc;if(!I)return 0;const h=Object.values(I.hk).reduce((a,b)=>a+b,0);return Math.min(1,Math.max(0,imOwned()-1)/5*.6+Math.min(h,22)/22*.4)};
+const imc=()=>{const c=IMC[im.mode]||IMC.duel,d=imDiff();return{hp:Math.round(c.hp*(1+.6*d)),dmg:c.dmg*(1+.2*d),acc:Math.min(.88,c.acc+.1*d),react:c.react*(1-.3*d),fire:[c.fire[0]*(1-.2*d),c.fire[1]*(1-.2*d)]}};
 // nivel activo de un hack (solo cuenta dentro de una partida del modo incremental)
 const hkl=id=>S.inc&&S.inc.hk[id]&&!S.inc.off[id]?S.inc.hk[id]:0,hk=id=>area===4?hkl(id):0;
 const im={on:false,mode:'duel',state:'count',t:0,clock:0,gain:0,round:1,sc:[0,0],goal:3,limit:240,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0},bx:0,bz:0,cnt:0};
@@ -1335,55 +1342,59 @@ function imMapSet(id){imMap=IMAPS[id];Object.assign(AREAS[4],{rects:imMap.rects,
 function imPlace(x,z,yw){px=x;pz=z;yaw=yw;pitch=0;pgy=0;jy=0;vy=0;kick=0}
 // el fondo del lobby: la arena elegida, vista desde fuera
 function imPreview(){const I=S.inc;area=4;imMapSet(I.mode);clearBots();im.on=false;const s=imMap.spawns[0];imPlace(s[0],s[1],0);php=maxHp();pInv=0;gst='ready';S.ammo=magSize()}
-function imPay(m,why){m=Math.round(m*CSH[hk('cash')]);S.money+=m;im.gain+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
-function imReady(){php=maxHp();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=3;im.cnt=4}
-function imRound(){clearBots();const m=imMap,j=()=>(rnd()-.5)*5,P=m.spawns[0],E=m.spawns[1];imPlace(P[0]+j(),P[1],0);mkBot({team:1,x:E[0]+j(),z:E[1],rot:PI,name:'Rival'});imReady()}
-function imSdSetup(){const m=imMap;imPlace(m.spawns[0][0],m.spawns[0][1],0);for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});im.bx=m.cx;im.bz=BGZ-10.5;imBombM.visible=false;imReady()}
+function imPay(m,why){m=Math.round(m*CSH[hk('cash')]*imMult());S.money+=m;im.gain+=m;if(FX)pop('+$'+fmt(m)+(why?'  '+why:''),why==='headshot'?'#ffb060':undefined)}
+function imReady(t){php=maxHp();S.ammo=magSize();gst='ready';pInv=0;im.state='count';im.t=t||3;im.cnt=4}
+function imRound(){clearBots();const m=imMap,j=()=>(rnd()-.5)*5,P=m.spawns[0],E=m.spawns[1];imPlace(P[0]+j(),P[1],0);mkBot({team:1,x:E[0]+j(),z:E[1],rot:PI,name:'Rival'});imReady(im.sc[0]+im.sc[1]?1.5:3)}
+function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;imPlace(m.spawns[0][0],m.spawns[0][1],0);for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});im.bx=m.cx;im.bz=BGZ-10.5;imBombM.visible=false;imReady()}
 function imFfaBot(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1]})}
 function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],0);for(let i=1;i<8;i++)imFfaBot(i);imReady()}
 function imStart(){const I=S.inc;if(!I.um[I.mode])return;const q=IM_WEAPONS[I.wsel];
   area=4;imMapSet(I.mode);clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
   S.alt=IM_WEAPONS.map(w=>w.wi).filter(w=>S.own[w]&&w!==S.weapon).pop()||S.weapon;
-  Object.assign(im,{on:true,mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],goal:I.mode==='duel'?3:I.mode==='ffa'?15:0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
+  Object.assign(im,{on:true,mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:IM_TIME[I.mode]||0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
   if(I.mode==='duel')imRound();else if(I.mode==='sd')imSdSetup();else imFfaSetup();
-  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'Tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'El primero en ganar 3 rondas':'Primero en llegar a 15 bajas')}
+  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 minutos · gana quien tenga más bajas':'8 minutos · gana quien tenga más bajas')}
 function imToLobby(){incSave();state='pause';wipeWorld();imPreview();hud();incLobby()}
 function incLobby(){state='pause';kb.w=kb.a=kb.s=kb.d=0;kb.fire=kb.ads=kb.crouch=kb.sprint=false;$('#mm').classList.remove('off');if(document.pointerLockElement)document.exitPointerLock();mmShow('lobby')}
 function startInc(isNew){if(isNew||!incP)incP=incFresh();cfgTo(incP);S=incP;mode='inc';started=false;wipeWorld();imPreview();hud();incSave();incLobby()}
 // ---------- desarrollo de la partida ----------
-function imEnd(win,why){if(im.state==='end')return;const I=S.inc,P=IM_PAY[im.mode];let sub=why||'',bonus=0;I.st.matches++;
+function imEnd(win,why){if(im.state==='end')return;const I=S.inc,P=IM_PAY[im.mode];let sub=why||'',bonus=0,draw=false;I.st.matches++;
   if(im.mode==='ffa'){const o=im.fsc.map((q,i)=>({i,k:q.k,d:q.d})).sort((a,b)=>b.k-a.k||a.d-b.d),pos=o.findIndex(q=>q.i===0)+1;win=pos===1;bonus=P.place[Math.min(3,pos-1)];sub=`Puesto ${pos} de ${im.fsc.length} · ${im.fsc[0].k} bajas`}
+  else if(im.mode==='duel'){win=im.sc[0]>im.sc[1];draw=im.sc[0]===im.sc[1];bonus=win?P.win:draw?P.win/2:0;sub=`Bajas ${im.sc[0]} – ${im.sc[1]}`}
   else if(win)bonus=P.win;
   if(win)I.st.wins++;if(bonus)imPay(bonus,'bonus de partida');
   im.state='end';im.t=7;im.cnt=0;if(win)slowMo(2.2);for(const b of bots)b.tg=null;if(FX)sfx.radio();
-  banner(win?'Victoria':'Derrota',(sub?sub+' · ':'')+'Ganado: $'+fmt(im.gain));incSave()}
-function imRoundEnd(win){if(im.state!=='play')return;im.sc[win?0:1]++;
-  if(im.sc[0]>=im.goal||im.sc[1]>=im.goal){imEnd(im.sc[0]>im.sc[1],`Marcador ${im.sc[0]} – ${im.sc[1]}`);return}
-  im.state='between';im.t=3;im.round++;for(const b of bots)b.tg=null;note(win?'Ronda ganada':'Ronda perdida',`Marcador ${im.sc[0]} – ${im.sc[1]}`)}
-function imScore(k,v){if(im.state!=='play'||im.mode!=='ffa')return;im.fsc[k].k++;im.fsc[v].d++;if(im.fsc[k].k>=im.goal)imEnd(null)}
+  banner(win?'Victoria':draw?'Empate':'Derrota',(sub?sub+' · ':'')+'Ganado: $'+fmt(im.gain));incSave()}
+function imDuelKill(win){if(im.state!=='play')return;im.sc[win?0:1]++;im.state='between';im.t=2;for(const b of bots)b.tg=null;note(win?'Baja':'Has caído',`Marcador ${im.sc[0]} – ${im.sc[1]}`)}
+// buscar y destruir: 3 rondas, gana la partida quien se lleve más
+function imSdEnd(win,why){if(im.state!=='play')return;im.sc[win?0:1]++;if(win)imPay(IM_PAY.sd.rwin,'ronda ganada');
+  if(im.sc[0]>=2||im.sc[1]>=2||im.round>=3){imEnd(im.sc[0]>im.sc[1],`Rondas ${im.sc[0]} – ${im.sc[1]} · ${why}`);return}
+  im.state='between';im.t=4;im.round++;for(const b of bots)b.tg=null;note(win?'Ronda ganada':'Ronda perdida',`${why} · rondas ${im.sc[0]} – ${im.sc[1]}`)}
+function imScore(k,v){if(im.state!=='play'||im.mode!=='ffa')return;im.fsc[k].k++;im.fsc[v].d++}
 function imKill(k,v,head){if(!im.on||im.state!=='play')return;const P=IM_PAY[im.mode],I=S.inc;
   if(k===PL){I.st.kills++;let m=P.kill;if(head){I.st.hs++;m+=P.hs*HSM[hk('hsm')]}imPay(m,head?'headshot':'')}
-  if(im.mode==='duel')imRoundEnd(k===PL);
-  else if(im.mode==='sd'){if(k===PL&&!bots.some(b=>b.st===1))imEnd(true,'Los cinco abatidos')}
+  if(im.mode==='duel')imDuelKill(k===PL);
+  else if(im.mode==='sd'){if(k===PL&&!bots.some(b=>b.st===1))imSdEnd(true,'Los cinco abatidos')}
   else imScore(k===PL?0:k.id,v.id)}
 function imPlayerDown(b){if(!im.on||im.state!=='play')return;if(FX){sfx.down();$('#fade').animate([{opacity:1,background:'#400'},{opacity:0}],{duration:900})}
-  if(im.mode==='duel')imRoundEnd(false);else if(im.mode==='sd')imEnd(false,'Has caído');
+  if(im.mode==='duel')imDuelKill(false);else if(im.mode==='sd')imSdEnd(false,'Has caído');
   else{imScore(b.id,0);if(im.state!=='play')return;const q=spawnPt(12);px=q[0];pz=q[1];php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
 function imBotGone(b){if(im.on&&im.mode==='ffa'&&im.state==='play'&&b.id)imFfaBot(b.id)}
 function imPlant(){const s=im.sd;if(!im.on||im.mode!=='sd'||im.state!=='play'||s.st!==0||s.plantT>0)return;s.plantT=.001;sfx.uiOk()}
 function imSdTick(dt){const s=im.sd;
   if(s.plantT>0){if(Math.hypot(px-im.bx,pz-im.bz)>2.6){s.plantT=0;note('Plantado cancelado','Quédate junto al objetivo mientras colocas la bomba')}
     else{s.plantT+=dt;if(s.plantT>=2.5){s.plantT=0;s.st=1;s.fuse=30;s.defT=0;S.inc.st.plants++;imBombM.visible=true;imPay(IM_PAY.sd.plant,'bomba plantada');for(const b of bots){b.hold=false;b.home=false}if(FX)sfx.radio();note('Bomba plantada','Defiéndela 30 s. Si la desactivan, pierdes')}}}
-  else if(s.st===0&&im.clock>=100){imEnd(false,'Se acabó el tiempo');return}
+  else if(s.st===0&&im.clock>=100){imSdEnd(false,'Se acabó el tiempo');return}
   if(s.st===1&&im.state==='play'){s.fuse-=dt;let near=false;for(const b of bots)if(b.st===1&&Math.hypot(b.x-im.bx,b.z-im.bz)<1.8)near=true;s.defT=near?s.defT+dt:Math.max(0,s.defT-dt*2);
     const q=Math.ceil(s.fuse*(s.fuse<10?2:1));if(q!==s.beep){s.beep=q;if(FX)tone(1800,1800,.05,'square',.07)}
-    if(s.fuse<=0){if(FX){sfx.boom();flashFx();boomM.position.set(im.bx,.8,im.bz);boomM.userData.t=.25;boomM.userData.r=5;boomM.visible=true;burst(im.bx,.8,im.bz,30,0x8a6a4a,9)}imBombM.visible=false;imEnd(true,'La bomba ha detonado')}
-    else if(s.defT>=3.2)imEnd(false,'Han desactivado la bomba')}}
+    if(s.fuse<=0){if(FX){sfx.boom();flashFx();boomM.position.set(im.bx,.8,im.bz);boomM.userData.t=.25;boomM.userData.r=5;boomM.visible=true;burst(im.bx,.8,im.bz,30,0x8a6a4a,9)}imBombM.visible=false;imSdEnd(true,'La bomba ha detonado')}
+    else if(s.defT>=3.2)imSdEnd(false,'Han desactivado la bomba')}}
 function imTick(dt){if(!im.on)return;
-  if(im.state==='count'){im.t-=dt;const c=Math.ceil(im.t);if(c!==im.cnt&&c>0){im.cnt=c;if(FX)tone(660,660,.06,'square',.05)}if(im.t<=0){im.state='play';im.clock=0;if(FX)tone(1040,1040,.18,'square',.06)}}
-  else if(im.state==='between'){im.t-=dt;if(im.t<=0)imRound()}
+  if(im.mode!=='sd'&&im.state!=='end'){im.clock+=dt;if(im.clock>=im.limit){imEnd(null);return}}   // 1 vs 1 y contra todos: el reloj corre siempre
+  if(im.state==='count'){im.t-=dt;const c=Math.ceil(im.t);if(c!==im.cnt&&c>0){im.cnt=c;if(FX)tone(660,660,.06,'square',.05)}if(im.t<=0){im.state='play';if(FX)tone(1040,1040,.18,'square',.06)}}
+  else if(im.state==='between'){im.t-=dt;if(im.t<=0){if(im.mode==='sd')imSdSetup();else imRound()}}
   else if(im.state==='end'){im.t-=dt;if(im.t<=0)imToLobby()}
-  else{im.clock+=dt;if(im.mode==='sd')imSdTick(dt);else if(im.mode==='ffa'&&im.clock>=im.limit)imEnd(null)}}
+  else if(im.mode==='sd'){im.clock+=dt;imSdTick(dt)}}
 // aimbot: tira de la mira hacia los enemigos visibles (nivel 1: cuerpo y cono estrecho · nivel 2: cabeza y cono amplio)
 function imAimbot(dt){const lv=hk('aim');if(!lv||state!=='play'||!im.on||im.state!=='play'||php<=0)return;
   const cone=lv===1?.42:1.2,k=Math.min(1,dt*(lv===1?4:16));let ba=1e9,by=0,bp=0;
@@ -1397,26 +1408,27 @@ const espG=new THREE.BoxGeometry(1,1,1),espF=new THREE.MeshBasicMaterial({color:
 function espOf(o){if(!o.esp){const g=new THREE.Group(),f=new THREE.Mesh(espG,espF),l=new THREE.LineSegments(espE,espL);f.renderOrder=l.renderOrder=999;f.frustumCulled=l.frustumCulled=false;g.add(f,l);o.g.add(g);o.esp=g}return o.esp}
 function imRender(dt){const s=im.sd;if(imBombM.visible){imBombL.visible=Math.sin(time*(s.fuse<10?14:6))>0}}
 const imHack=()=>IM_HACKS.filter(h=>hkl(h.id)).map(h=>h.n+(h.max>1?' '+hkl(h.id):'')).join(' · ');
-function imObj(){if(!im.on)return '';if(im.state==='count')return (im.mode==='duel'?'Ronda '+im.round+' · ':'')+'Empieza en '+Math.max(1,Math.ceil(im.t));
-  if(im.mode==='duel')return im.state==='between'?'Ronda '+(im.round-1)+' terminada':'Elimina al rival · primero a '+im.goal;
-  if(im.mode==='sd'){const s=im.sd;return s.plantT>0?'Colocando la bomba…':s.st===1?'Defiende la bomba · '+Math.ceil(s.fuse)+' s':'Planta la bomba en el objetivo · '+Math.max(0,Math.ceil(100-im.clock))+' s'}
-  return im.state==='end'?'':'Primero a '+im.goal+' bajas · llevas '+im.fsc[0].k+' · '+Math.max(0,Math.ceil(im.limit-im.clock))+' s'}
+function imObj(){if(!im.on)return '';if(im.state==='count')return (im.mode==='sd'?'Ronda '+im.round+' de 3 · ':'')+'Empieza en '+Math.max(1,Math.ceil(im.t));
+  if(im.state==='end')return '';
+  if(im.mode==='duel')return 'Más bajas que el rival · quedan '+mmss(im.limit-im.clock);
+  if(im.mode==='sd'){const s=im.sd;return s.plantT>0?'Colocando la bomba…':s.st===1?'Defiende la bomba · '+Math.ceil(s.fuse)+' s':'Ronda '+im.round+' de 3 · planta la bomba · '+Math.max(0,Math.ceil(100-im.clock))+' s'}
+  return 'Más bajas gana · llevas '+im.fsc[0].k+' · quedan '+mmss(im.limit-im.clock)}
 function imHud(){let h=imMn(im.mode).name+'<br>';
-  if(im.mode==='duel')h+=`Rondas: <b>${im.sc[0]} – ${im.sc[1]}</b> (a ${im.goal})<br>`;
-  else if(im.mode==='sd'){let al=0;for(const b of bots)if(b.st===1)al++;h+=`Enemigos: <b>${al} / 5</b><br>Bomba: <b>${im.sd.st===1?'plantada':'sin plantar'}</b><br>`}
-  else{const o=im.fsc.map((q,i)=>({q,i})).sort((a,b)=>b.q.k-a.q.k);o.forEach((r,i)=>{if(i<4||r.i===0)h+=`${r.i===0?'<b>':''}${i+1}. ${r.q.n} · ${r.q.k}${r.i===0?'</b>':''}<br>`})}
-  return h+`Ganado: <b>$${fmt(im.gain)}</b>`}
+  if(im.mode==='duel')h+=`Bajas: <b>${im.sc[0]} – ${im.sc[1]}</b><br>Tiempo: <b>${mmss(im.limit-im.clock)}</b><br>`;
+  else if(im.mode==='sd'){let al=0;for(const b of bots)if(b.st===1)al++;h+=`Rondas: <b>${im.sc[0]} – ${im.sc[1]}</b> (${im.round}/3)<br>Enemigos: <b>${al} / 5</b><br>Bomba: <b>${im.sd.st===1?'plantada':'sin plantar'}</b><br>`}
+  else{h+=`Tiempo: <b>${mmss(im.limit-im.clock)}</b><br>`;const o=im.fsc.map((q,i)=>({q,i})).sort((a,b)=>b.q.k-a.q.k);o.forEach((r,i)=>{if(i<4||r.i===0)h+=`${r.i===0?'<b>':''}${i+1}. ${r.q.n} · ${r.q.k}${r.i===0?'</b>':''}<br>`})}
+  return h+`Ganado: <b>$${fmt(im.gain)}</b> (×${+(imMult()*CSH[hk('cash')]).toFixed(2)})`}
 // ---------- lobby ----------
 let lbTab='modes',lbMsg='';
 function lobbyRender(){const I=S.inc,nm=imMn(I.mode),wp=IM_WEAPONS[I.wsel],nh=IM_HACKS.filter(h=>hkl(h.id)).length;
-  $('#lbinfo').innerHTML=`<b>$${fmt(S.money)}</b> · ${I.st.matches} partidas · ${I.st.wins} victorias · ${I.st.kills} bajas · ${I.st.hs} headshots`;
+  $('#lbinfo').innerHTML=`<b>$${fmt(S.money)}</b> · dinero ×${+(imMult()*CSH[hkl('cash')]).toFixed(2)} · bots al ${Math.round(imDiff()*100)} % de dificultad<br>${I.st.matches} partidas · ${I.st.wins} victorias · ${I.st.kills} bajas · ${I.st.hs} headshots`;
   $('#lbstart').innerHTML=`▶ Iniciar partida<small>${nm.name} · ${WEAPONS[wp.wi].name} · ${nh} hack${nh===1?'':'s'} activo${nh===1?'':'s'}</small>`;
   document.querySelectorAll('#pn-lobby .lbtabs button').forEach(b=>b.classList.toggle('act',b.dataset.a==='lbtab:'+lbTab));
   const row=(a,t,d,s,c,tg,ind)=>`<div class="lbrow"${ind?` style="margin-left:${ind*16}px"`:''}><button class="lbm ${c||''}" data-a="${a}"><span><b>${t}</b><small>${d}</small></span><span class="st">${s}</span></button>${tg||''}</div>`;
   let R;
   if(lbTab==='modes')R=IM_MODES.map(m=>{const un=I.um[m.id],sel=I.mode===m.id;return row('lb:m:'+m.id,m.name,m.d,sel?'elegido':un?'elegir':'$'+fmt(m.cost),sel?'sel ok':un||S.money>=m.cost?'ok':'lock')});
   else if(lbTab==='weapons')R=IM_WEAPONS.map((q,i)=>{const w=WEAPONS[q.wi],own=S.own[q.wi],pv=i===0||S.own[IM_WEAPONS[i-1].wi],cur=I.wsel===i;
-    return row('lb:w:'+i,w.name,`${q.tag} · ${w.auto?'automática':'tiro a tiro'} · ${w.rate}/s · cargador ${w.mag} · daño ${q.dmg}`+(own||pv?'':' · consigue antes la anterior'),cur?'equipada':own?'equipar':pv?'$'+fmt(q.cost):'bloqueada',cur?'sel ok':own||(pv&&S.money>=q.cost)?'ok':'lock')});
+    return row('lb:w:'+i,w.name,`${q.tag} · ${w.auto?'automática':'tiro a tiro'} · ${w.rate}/s · cargador ${w.mag} · daño ${q.dmg}`+(i?` · dinero ×${+(1+.25*i).toFixed(2)} al tenerla`:'')+(own||pv?'':' · consigue antes la anterior'),cur?'equipada':own?'equipar':pv?'$'+fmt(q.cost):'bloqueada',cur?'sel ok':own||(pv&&S.money>=q.cost)?'ok':'lock')});
   else R=IM_HACKS.map(h=>{const l=I.hk[h.id]||0,rq=!h.req||(I.hk[h.req[0]]||0)>=h.req[1],mx=l>=h.max,on=!I.off[h.id],rn=h.req?IM_HACKS.find(x=>x.id===h.req[0]).n:'';
     const d=!rq?`Requiere: ${rn}${h.req[1]>1?' nivel '+h.req[1]:''}`:mx?h.fx[l-1]:l?`Ahora: ${h.fx[l-1]} · Siguiente: ${h.fx[l]}`:h.fx[0];
     return row('lb:h:'+h.id,h.n+(h.max>1?` · ${l}/${h.max}`:''),d,!rq?'bloqueado':mx?(on?'activo':'apagado'):'$'+fmt(h.cost[l]),!rq?'lock':mx?(on?'sel ok':''):S.money>=h.cost[l]?'ok':'lock',l?`<button class="lbt ${on?'on':''}" data-a="lb:t:${h.id}">${on?'ON':'OFF'}</button>`:'',h.tier)});
