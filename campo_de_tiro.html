@@ -131,6 +131,9 @@ canvas#c.dead{filter:grayscale(.85) brightness(.85)}
 body.touch #tc{display:block}
 #tc .tb{position:absolute;display:none;align-items:center;justify-content:center;border-radius:50%;border:1.5px solid #ffffff66;background:#0c0e0b70;color:#e3e8dc;font-size:max(9px,2.7vmin);letter-spacing:.5px;text-transform:uppercase;line-height:1.1;padding:0;touch-action:none}
 #tc.play .tb{display:flex}#tc.play .tb.hid{display:none}
+#tc .tb svg{width:56%;height:56%;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#tc [data-b=fire] svg{width:50%;height:50%}
+kbd svg{width:1.15em;height:1.15em;vertical-align:-.22em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #tc .tb.dn,#tc .tb.on{background:#b9cf5a60;border-color:#b9cf5a;color:#fff}#tc .tb.al{border-color:#e0705c;color:#ffd0c6}
 #tc [data-b=pause]{left:calc(8px + var(--sl));top:8px;width:42px;height:42px;font-size:14px;font-weight:600}
 #tc [data-b=fire]{right:calc(6vmin + var(--sr));bottom:calc(20vmin + var(--sb));width:21vmin;height:21vmin;background:#e0705c38;border-color:#e0705ccc}
@@ -184,7 +187,7 @@ body.touch #keys{grid-template-columns:1fr}body.touch #keys>div{display:none}bod
   <div id="bl"><div id="hpw"><div id="hpt"></div><div id="hpb"><i id="hpf"></i></div></div><div id="money"></div><div id="chapas"></div><div id="rankrow"></div><div id="xp"><i id="xpf"></i></div></div>
   <div id="br"><div id="buffs"></div><div id="wname"></div><div id="ammo"></div><div id="dirtrow"></div><div id="dirt"><i id="dfill"></i></div></div>
 </div>
-<div id="tc"><div id="tjh"></div><div id="tj"><i id="tjk"></i></div><button class="tb" data-b="pause">II</button><button class="tb" data-b="fire">Fuego</button><button class="tb" data-b="ads">Mira</button><button class="tb" data-b="rel">Rec.</button><button class="tb" data-b="jump">Salto</button><button class="tb" data-b="crouch">Agach.</button><button class="tb" data-b="swap">Arma</button><button class="tb hid" data-b="use">Usar</button><button class="tb hid" data-b="clean">Limpiar</button><button class="tb hid" data-b="nv">VN</button></div>
+<div id="tc"><div id="tjh"></div><div id="tj"><i id="tjk"></i></div><button class="tb" data-b="pause" aria-label="Pausa"></button><button class="tb" data-b="fire" aria-label="Disparar"></button><button class="tb" data-b="ads" aria-label="Apuntar"></button><button class="tb" data-b="rel" aria-label="Recargar"></button><button class="tb" data-b="jump" aria-label="Saltar"></button><button class="tb" data-b="crouch" aria-label="Agacharse"></button><button class="tb" data-b="swap" aria-label="Cambiar de arma"></button><button class="tb hid" data-b="use" aria-label="Usar"></button><button class="tb hid" data-b="clean" aria-label="Limpiar el arma"></button><button class="tb hid" data-b="nv" aria-label="Visión nocturna"></button></div>
 <div id="rot">Gira el móvil<br>Se juega en horizontal</div>
 <div id="fade"></div>
 <div id="menu"><div id="mtitle"></div><div id="msub"></div><div id="mrows"></div><div id="mfoot"></div></div>
@@ -1069,7 +1072,19 @@ function note(t,sub){if(!FX)return;const d=document.createElement('div');d.class
 function pop(t,col){if(!FX)return;const p=$('#pops'),d=document.createElement('div');d.textContent=t;d.style.color=col||'#e3e8dc';p.appendChild(d);
   d.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.7},{opacity:0}],{duration:1100}).onfinish=()=>d.remove();while(p.children.length>4)p.firstChild.remove()}
 function tip(id,t,sub){if(S.tips[id])return;S.tips[id]=1;note(t,sub)}
-const TKN={E:'USAR',R:'REC.',C:'LIMPIAR',N:'VN'},kn=(k,p)=>lastDev==='pad'?p:lastDev==='touch'?TKN[k]:k,kk=(k,p)=>`<kbd>${kn(k,p)}</kbd>`;
+// iconos de los controles táctiles (SVG de 24x24, trazo del color del texto)
+const TI=(()=>{const v=p=>`<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;return{
+ pause:v('<path d="M8.5 5v14M15.5 5v14"/>'),
+ fire:v('<path d="M12 2c2.4 2.2 3.2 4.8 3.2 7.5V17H8.8V9.5C8.8 6.8 9.6 4.2 12 2z" fill="currentColor" stroke="none"/><rect x="8.2" y="18.2" width="7.6" height="3.4" rx=".9" fill="currentColor" stroke="none"/>'),
+ ads:v('<circle cx="12" cy="12" r="6.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r=".9" fill="currentColor"/>'),
+ rel:v('<path d="M20 12a8 8 0 1 1-2.7-6"/><path d="M20 3.5V9h-5.5"/><path d="M12 9.5v5" stroke-width="2.6"/>'),
+ jump:v('<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>'),
+ crouch:v('<path d="M6 8l6 6 6-6"/><path d="M5 19h14"/>'),
+ swap:v('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>'),
+ use:v('<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-1.4a6 6 0 0 1-4.8-2.4L4 15.5a1.6 1.6 0 0 1 2.5-2L9 16"/>'),
+ clean:v('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>'),
+ nv:v('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}})();
+const TKN={E:TI.use,R:TI.rel,C:TI.clean,N:TI.nv},kn=(k,p)=>lastDev==='pad'?p:lastDev==='touch'?TKN[k]:k,kk=(k,p)=>`<kbd>${kn(k,p)}</kbd>`;
 let padObj=null;
 function rumble(a,b,ms){if(lastDev!=='pad'||!padObj||!padObj.vibrationActuator)return;try{padObj.vibrationActuator.playEffect('dual-rumble',{duration:ms,strongMagnitude:a,weakMagnitude:b})}catch(e){}}
 
@@ -1757,7 +1772,8 @@ function aimAssist(dt,act,snap){const aa=S.assist;let m=1;
 /* =============== CONTROLES TÁCTILES =============== */
 // joystick flotante en la mitad izquierda, arrastre para mirar en la derecha y botones; alimenta el mismo objeto «pad» que el mando
 const tc={mx:0,mz:0,fire:false,ads:false,adsP:false,sprint:false,slow:1,joy:-1,pts:new Map()},TC=$('#tc'),TJ=$('#tj'),TJK=$('#tjk'),TB={};
-TC.querySelectorAll('.tb').forEach(e=>TB[e.dataset.b]=e);
+TC.querySelectorAll('.tb').forEach(e=>{TB[e.dataset.b]=e;e.innerHTML=TI[e.dataset.b]});
+$('#keys .tk').innerHTML=`<h3>PANTALLA TÁCTIL</h3>Mitad izquierda: arrastra para moverte (lleva el dedo al tope hacia delante para correr)<br>Mitad derecha: arrastra para mirar · también puedes arrastrar sobre <kbd>${TI.fire}</kbd> (bala) para apuntar mientras disparas<br><kbd>${TI.ads}</kbd> apuntar · <kbd>${TI.rel}</kbd> recargar o desencasquillar · <kbd>${TI.swap}</kbd> arma anterior · <kbd>${TI.jump}</kbd> saltar · <kbd>${TI.crouch}</kbd> agacharse<br><kbd>${TI.use}</kbd> usar, <kbd>${TI.clean}</kbd> limpiar el arma y <kbd>${TI.nv}</kbd> visión nocturna aparecen cuando se pueden usar · <kbd>${TI.pause}</kbd> pausa`;
 const vmin=()=>Math.min(innerWidth,innerHeight)/100;
 function setTouch(){gesture=true;if(lastDev==='touch')return;lastDev='touch';document.body.classList.add('touch');$('#aaRow').style.display='';if(state==='menu')buildMenu()}
 function goFull(){try{const d=document.documentElement;if(document.fullscreenElement||!d.requestFullscreen)return;const p=d.requestFullscreen({navigationUI:'hide'});
