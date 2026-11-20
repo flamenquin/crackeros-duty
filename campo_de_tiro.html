@@ -1230,7 +1230,7 @@ function updBots(dt){
 function rayBot(d,o,list){let best=null,bt=1e9,bh=false;const tc=rayCover(o,d);
   const hbk=HBM[hk('hb')];
   for(const b of bots){if(b.st!==1||b.team===0)continue;const s=b.type?1.25:1,ox=o.x-b.x,oz=o.z-b.z,oy0=o.y-b.y;let t=1e9,hd=false;
-    {const oy=oy0-1.68*s,bq=ox*d.x+oy*d.y+oz*d.z,cq=ox*ox+oy*oy+oz*oz-.0324*s*s*hbk*hbk,di=bq*bq-cq;if(di>=0){const q=-bq-Math.sqrt(di);if(q>0){t=q;hd=true}}}
+    {const oy=oy0-1.68*s,bq=ox*d.x+oy*d.y+oz*d.z,cq=ox*ox+oy*oy+oz*oz-(area===4?.0576:.0324)*s*s*hbk*hbk,di=bq*bq-cq;if(di>=0){const q=-bq-Math.sqrt(di);if(q>0){t=q;hd=true}}}
     {const a=d.x*d.x+d.z*d.z,b2=ox*d.x+oz*d.z,c2=ox*ox+oz*oz-.09*s*s*hbk*hbk,di=b2*b2-a*c2;if(a>1e-9&&di>=0){const q=(-b2-Math.sqrt(di))/a,y=oy0+d.y*q;if(q>0&&q<t&&y>.05-(hbk-1)*.3&&y<1.53*s+(hbk-1)*.3){t=q;hd=false}}}
     if(t<tc){if(list)list.push([b,hd]);if(t<bt){bt=t;best=b;bh=hd}}}
   return best?[best,bt,bh]:null}
@@ -1294,7 +1294,7 @@ const INC_KEY='operacionAceroIncremental1';
 const IM_MODES=[
  {id:'duel',name:'1 vs 1 · Gulag',cost:0,d:'Contrarreloj de 15 s en una arena diminuta. Cada baja cuenta: todos reaparecen 1 s después de morir. Encadena bajas sin morir para subir el multiplicador de dinero.'},
  {id:'sd',name:'Buscar y destruir · 1 vs 5',cost:1000,d:'3 rondas de 30 s. Tú solo contra cinco y con una sola vida por ronda: llega al objetivo, planta la bomba y defiéndela, o elimínalos a todos.'},
- {id:'ffa',name:'Contra todos',cost:4500,d:'Contrarreloj de 30 s: ocho tiradores en un patio. Gana quien más bajas tenga.'}];
+ {id:'ffa',name:'Contra todos',cost:4500,d:'Contrarreloj de 45 s: ocho tiradores en un patio. Gana quien más bajas tenga.'}];
 // armas: se reciclan de los otros modos (índice en WEAPONS); el daño por disparo va nivelado para que cada una sea mejor que la anterior
 const IM_WEAPONS=[
  {wi:0,cost:0,dmg:22,tag:'Pistola'},
@@ -1323,7 +1323,7 @@ const IM_STREAK=[1,1,1.25,1.5,2],imStreakMult=()=>1+(IM_STREAK[Math.min(im.ks,4)
 const HBM=[1,1.5,2.2,3.2],HSM=[1,1.5,2.5,4],SPM=[1,1.2,1.45],GOD=[1,.8,.6,.4],CSH=[1,1.25,1.5,1.75,2];
 // pagos base y dificultad de los bots por modo
 const IM_PAY={duel:{kill:25,hs:15,win:200},sd:{kill:50,hs:30,plant:100,rwin:100,win:300},ffa:{kill:40,hs:25,place:[400,250,120,40]}};
-const IM_TIME={duel:15,ffa:30},IM_SD_TIME=30,IM_DEAD=1,IM_RESPAWN=1;   // segundos: partida de 1 vs 1 · partida de contra todos · tiempo para plantar en cada ronda de S&D · muerte del jugador (animación y reaparición) · reaparición de los bots
+const IM_TIME={duel:15,ffa:45},IM_SD_TIME=30,IM_DEAD=1,IM_RESPAWN=1;   // segundos: partida de 1 vs 1 · partida de contra todos · tiempo para plantar en cada ronda de S&D · muerte del jugador (animación y reaparición) · reaparición de los bots
 const mmss=t=>{t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const IMC={duel:{hp:100,dmg:22,acc:.8,react:.22,fire:[.25,.35]},sd:{hp:60,dmg:12,acc:.66,react:.4,fire:[.6,.6]},ffa:{hp:100,dmg:16,acc:.74,react:.28,fire:[.4,.5]}};
 // cada arma comprada suma ×0,25 a todo el dinero (2ª arma ×1,25 · 3ª ×1,5 · …)
@@ -1353,13 +1353,14 @@ function imRound(fast){clearBots();im.spawnQ=[];const m=imMap,j=()=>(rnd()-.5)*5
 function imRival(){const c=imMap.spawns.slice(0,2).sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz))[0];let x=c[0],z=c[1];for(let k=0;k<12;k++){const tx=c[0]+(rnd()-.5)*5;if(botOk(tx,c[1])){x=tx;break}}mkBot({team:1,x,z,rot:z<pz?PI:0,name:'Rival'}).react=.4}
 function imSdSetup(){const m=imMap;clearBots();im.sd={st:0,plantT:0,fuse:0,defT:0,beep:0};im.clock=0;imPlace(m.spawns[0][0],m.spawns[0][1],0);for(let i=1;i<m.spawns.length;i++)mkBot({team:1,x:m.spawns[i][0],z:m.spawns[i][1],rot:PI,hold:i<4,home:true,name:'Guardia'});im.bx=m.cx;im.bz=BGZ-10.5;imBombM.visible=false;imReady()}
 function imFfaBot(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1]})}
-function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],0);for(let i=1;i<8;i++)imFfaBot(i);imReady()}
+const imYawC=(x,z)=>Math.atan2(-(imMap.cx-x),-(BGZ-z));   // mirar hacia el centro de la arena
+function imFfaSetup(){im.fsc=FFA_N.slice(0,8).map(n=>({n,k:0,d:0}));const q=spawnPt(0);imPlace(q[0],q[1],imYawC(q[0],q[1]));for(let i=1;i<8;i++)imFfaBot(i);imReady()}
 function imStart(){const I=S.inc;if(!I.um[I.mode])return;const q=IM_WEAPONS[I.wsel];
   area=4;imMapSet(I.mode);clearBots();ffa.on=false;mis.on=false;slowT=0;streak=0;if(S.weapon!==q.wi)equip(q.wi);
   S.alt=IM_WEAPONS.map(w=>w.wi).filter(w=>S.own[w]&&w!==S.weapon).pop()||S.weapon;
   Object.assign(im,{on:true,dead:0,ks:0,spawnQ:[],mode:I.mode,clock:0,gain:0,round:1,sc:[0,0],limit:IM_TIME[I.mode]||0,fsc:[],sd:{st:0,plantT:0,fuse:0,defT:0,beep:0}});
   if(I.mode==='duel')imRound();else if(I.mode==='sd')imSdSetup();else imFfaSetup();
-  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'30 segundos · gana quien tenga más bajas')}
+  startPlay();hud();banner(imMn(I.mode).name.split(' · ')[0],I.mode==='sd'?'3 rondas de 30 s · tú contra cinco · planta la bomba o elimínalos a todos':I.mode==='duel'?'15 segundos · gana quien tenga más bajas':'45 segundos · gana quien tenga más bajas')}
 function imToLobby(){incSave();state='pause';wipeWorld();imPreview();hud();incLobby()}
 function incLobby(){state='pause';kb.w=kb.a=kb.s=kb.d=0;kb.fire=kb.ads=kb.crouch=kb.sprint=false;$('#mm').classList.remove('off');if(document.pointerLockElement)document.exitPointerLock();mmShow('lobby')}
 function startInc(isNew){if(isNew||!incP)incP=incFresh();cfgTo(incP);S=incP;mode='inc';started=false;wipeWorld();imPreview();hud();incSave();incLobby()}
@@ -1385,7 +1386,7 @@ function imKill(k,v,head){if(!im.on||im.state!=='play')return;const P=IM_PAY[im.
 function imPlayerDown(b){if(!im.on||im.state!=='play'||im.dead>0)return;im.ks=0;if(FX){sfx.down();$('#fade').animate([{opacity:1,background:'#400'},{opacity:0}],{duration:900})}
   imDeathStart();
   if(im.mode==='duel')imDuelKill(false);else if(im.mode==='sd')imSdEnd(false,'Has caído');else imScore(b.id,0)}
-function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);px=q[0];pz=q[1];php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
+function imRespawn(){if(im.mode==='duel')imRound(true);else if(im.mode==='ffa'){const q=spawnPt(12);imPlace(q[0],q[1],imYawC(q[0],q[1]));php=maxHp();pInv=2;gst='ready';S.ammo=magSize()}}
 // al morir: 1,5 s en tercera persona viendo caer a tu personaje (el reloj no corre)
 let imDeath=null;
 function imDeathStart(){imDeathClear();im.dead=IM_DEAD;kb.fire=false;gst='ready';const o=botObj('soldier');
