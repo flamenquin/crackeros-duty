@@ -708,7 +708,7 @@ for(const dz of[-.69,.69])ib(.14,2.3,.08,M.beam,-6.37,1.15,1.6+dz);ib(.14,.08,1.
 sign('ZONA DE COMBATE',1.7,-6.38,2.6,1.6,PI/2);
 const lampH=isp(.05,new THREE.MeshBasicMaterial({color:0xd03020}),-6.36,2.1,2.5);
 // ---------- casa con jardín (mapa de combate) ----------
-const SPAWN=[[-24,-54],[0,-55],[24,-54],[-27,-34],[27,-34],[-26,-14],[26,-14],[-12,-55],[12,-55]];
+const SPAWN=[[-17,-50],[0,-55],[20,-50],[-27,-34],[27,-34],[-26,-14],[26,-14],[-12,-55],[12,-55]];
 {const X=OX,stucco=mat({color:0xd9d2c0,map:TX.conc(3,1.5)}),roofM=mat({color:0x8a4332,roughness:.8}),hedge=mat({color:0x2f4a26,roughness:1}),stone=mat({color:0x9a968c,map:TX.conc(2,1)}),woodD=mat({color:0xc9a57a,map:TX.wood(1,1)}),
    glass=mat({color:0x2a3a4a,roughness:.1,metalness:.8}),sofaM=mat({color:0x4a5a6a,roughness:1}),leaf=mat({color:0x35582b,roughness:1,flatShading:true}),water=mat({color:0x3a6a80,roughness:.15,metalness:.4});
  const cov=(x0,x1,z0,z1,tall)=>COV.push({x0:X+x0,x1:X+x1,z0,z1,tall:!!tall}),covC=(x,z,r,tall)=>COV.push({cx:X+x,cz:z,r,x0:X+x-r,x1:X+x+r,z0:z-r,z1:z+r,tall:!!tall});
@@ -749,6 +749,9 @@ const SPAWN=[[-24,-54],[0,-55],[24,-54],[-27,-34],[27,-34],[-26,-14],[26,-14],[-
  box(1.4,2.7,59,hedge,X-30.2,1.35,-29.5);box(1.4,2.7,59,hedge,X+30.2,1.35,-29.5);box(62,2.7,1.4,hedge,X,1.35,-58.2);box(24.6,2.7,1.2,hedge,X-18,1.35,-.25);box(24.6,2.7,1.2,hedge,X+18,1.35,-.25);
  // fuente central (cobertura baja)
  cyl(2.3,.55,stone,X,.28,-30);ic(2.0,.08,water,X,.55,-30);cyl(.28,1.5,stone,X,.9,-30);cyl(.8,.14,stone,X,1.6,-30);covC(0,-30,2.3,0);
+ // esquinas cortadas en diagonal (hileras de seto): el jardín deja de ser un rectángulo
+ for(const k of[[-1,-57,12],[1,-57,8],[1,-1,10]]){const sx=k[0],zc=k[1],c=k[2],sz=zc<-30?1:-1,x0=sx*29-sx*c,x1=sx*29,z1=zc+sz*c,n=Math.ceil(Math.hypot(x1-x0,z1-zc)/.9);
+   for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,z=zc+(z1-zc)*i/n,m=new THREE.Mesh(new THREE.CylinderGeometry(.95,.95,2.7,12),hedge);m.position.set(X+x,1.35,z);m.castShadow=true;scene.add(m);covC(x,z,.95,1)}}
  // árboles (el tronco cubre)
  for(const q of[[-18,-12],[14,-9],[-9,-22],[20,-24],[-22,-36],[9,-39],[-4,-47],[22,-48],[-14,-52],[12,-19],[-25,-22],[3,-12]]){cyl(.36,3.4,woodD,X+q[0],1.7,q[1]);
    for(const f of[[0,4.2,0,1.9],[.9,3.6,.4,1.3],[-.8,3.7,-.5,1.4],[.2,5.2,-.2,1.2]]){const b=isp(f[3],leaf,X+q[0]+f[0],f[1],q[1]+f[2]);b.castShadow=true}covC(q[0],q[1],.36,1)}
@@ -838,7 +841,10 @@ const IMAPS={},IM_MAPS={duel:['duel','duel2','duel3'],sd:['sd','sd2','sd3'],ffa:
     const fl=new THREE.Mesh(new THREE.PlaneGeometry(w,d),o.floor);fl.rotation.x=-PI/2;fl.position.set(cx,.03,Z);fl.receiveShadow=true;scene.add(fl);
     const gr=new THREE.Mesh(new THREE.PlaneGeometry(150,150),mat({map:TX.dirt(40,40),color:0x77746c,roughness:1}));gr.rotation.x=-PI/2;gr.position.set(cx,.01,Z);gr.receiveShadow=true;scene.add(gr);
     box(w+1,wh,.5,o.wall,cx,wh/2,Z-d/2-.25);box(w+1,wh,.5,o.wall,cx,wh/2,Z+d/2+.25);box(.5,wh,d,o.wall,cx-w/2-.25,wh/2,Z);box(.5,wh,d,o.wall,cx+w/2+.25,wh/2,Z);
-    for(const c of o.cov){const x0=c[0],x1=c[1],z0=c[2],z1=c[3],h=c[4];box(x1-x0,h,z1-z0,c[6],cx+(x0+x1)/2,h/2,Z+(z0+z1)/2);cov.push({x0:cx+x0,x1:cx+x1,z0:Z+z0,z1:Z+z1,tall:!!c[5]})}
+    for(const c of o.cov.concat((o.carve||[]).map(c=>[c[0],c[1],c[2],c[3],wh,1,o.wall]))){const x0=c[0],x1=c[1],z0=c[2],z1=c[3],h=c[4];box(x1-x0,h,z1-z0,c[6],cx+(x0+x1)/2,h/2,Z+(z0+z1)/2);cov.push({x0:cx+x0,x1:cx+x1,z0:Z+z0,z1:Z+z1,tall:!!c[5]})}
+    // esquinas cortadas en diagonal: hilera de pilares [signo x, signo z, tamaño]
+    for(const k of o.cut||[]){const sx=k[0],sz=k[1],c=k[2],x0=sx*w/2-sx*c,z0=sz*d/2,x1=sx*w/2,z1=sz*d/2-sz*c,n=Math.ceil(Math.hypot(x1-x0,z1-z0)/.9);
+      for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,z=z0+(z1-z0)*i/n,p=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,wh,12),o.wall);p.position.set(cx+x,wh/2,Z+z);p.castShadow=p.receiveShadow=true;scene.add(p);cov.push({cx:cx+x,cz:Z+z,r:.8,x0:cx+x-.8,x1:cx+x+.8,z0:Z+z-.8,z1:Z+z+.8,tall:true})}}
     sign(o.title,3.2,cx,wh-1.1,Z-d/2+.01,0);sign(o.title,3.2,cx,wh-1.1,Z+d/2-.01,PI);
     if(o.site){ib(4.4,.02,4.4,M.yel,cx+o.site[0],.05,Z+o.site[1]);ib(3.8,.03,3.8,mat({color:0x2a2c2b}),cx+o.site[0],.052,Z+o.site[1])}
     // mecánicas: zona que se cierra · caja de armas · puerta que se vuela
@@ -847,13 +853,13 @@ const IMAPS={},IM_MAPS={duel:['duel','duel2','duel3'],sd:['sd','sd2','sd3'],ffa:
     return M0};
   // ===== 1 vs 1 =====
   // gulag: 14 x 18 m, pilar central y dos muros en diagonal
-  arena('duel',-150,0,14,18,{name:'Gulag',title:'GULAG',wh:5,floor:flo(5,6,0x8a8c88),wall:dkW,
+  arena('duel',-150,0,14,18,{name:'Gulag',title:'GULAG',cut:[[-1,-1,3.5],[1,-1,3.5],[1,1,3.5],[-1,1,3.5]],wh:5,floor:flo(5,6,0x8a8c88),wall:dkW,
     cov:[[-1.3,1.3,-1.3,1.3,3.2,1,dkW],[-5.6,-3.8,-4.8,-1.8,3,1,wallM],[3.8,5.6,1.8,4.8,3,1,wallM],[-5.2,-3.6,3,4.6,1.05,0,crate],[3.6,5.2,-4.6,-3,1.05,0,crate],[-1.8,1.8,5.6,6.2,1.05,0,M.metal],[-1.8,1.8,-6.2,-5.6,1.05,0,M.metal]],
     spawns:[[0,7.6],[0,-7.6]]});
   for(const sx of[-1,1])for(let i=0;i<17;i++){ib(.06,2.6,.06,M.dark,-150+sx*6.9,1.3,BGZ-8+i)}
   ib(.08,.08,18,M.dark,-150-6.9,2.6,BGZ);ib(.08,.08,18,M.dark,-150+6.9,2.6,BGZ);
   // búnker: 16 x 16 m, cuatro pilares, bloque bajo en el centro y dos muros que cierran la línea de tiro entre esquinas
-  arena('duel2',-150,1,16,16,{name:'Búnker',title:'BÚNKER',wh:5,floor:flo(5,5,0x7d8288),wall:steelW,
+  arena('duel2',-150,1,16,16,{name:'Búnker',title:'BÚNKER',cut:[[1,1,5],[-1,-1,5]],wh:5,floor:flo(5,5,0x7d8288),wall:steelW,
     cov:[[-4.5,-2.5,-4.5,-2.5,3.2,1,dkW],[2.5,4.5,-4.5,-2.5,3.2,1,dkW],[-4.5,-2.5,2.5,4.5,3.2,1,dkW],[2.5,4.5,2.5,4.5,3.2,1,dkW],
       [-1.2,1.2,-1.2,1.2,1.05,0,crate],[-.6,.6,-7.2,-5.2,3,1,wallM],[-.6,.6,5.2,7.2,3,1,wallM],[-7.8,-6.2,-.6,.6,1.05,0,M.metal],[6.2,7.8,-.6,.6,1.05,0,M.metal]],
     spawns:[[-6.5,6.5],[6.5,-6.5]]});
@@ -863,19 +869,19 @@ const IMAPS={},IM_MAPS={duel:['duel','duel2','duel3'],sd:['sd','sd2','sd3'],ffa:
     spawns:[[0,9.5],[0,-9.5]]});
   // ===== Buscar y destruir =====
   // objetivo A: 32 x 26 m; el objetivo está al fondo, entre dos muros
-  arena('sd',0,0,32,26,{name:'Objetivo A',title:'OBJETIVO A',wh:4.4,floor:flo(9,8,0xb9ad8c),wall:sandW,site:[0,-10.5],
+  arena('sd',0,0,32,26,{name:'Objetivo A',title:'OBJETIVO A',cut:[[-1,1,6],[1,1,6]],wh:4.4,floor:flo(9,8,0xb9ad8c),wall:sandW,site:[0,-10.5],
     cov:[[-12.5,-6.4,-.6,1.84,2.6,1,ctn[0]],[6.4,12.5,-.6,1.84,2.6,1,ctn[1]],[-1.22,1.22,-3,3.1,2.6,1,ctn[3]],
       [-12,-9.56,4.5,10.6,2.6,1,ctn[2]],[9.56,12,4.5,10.6,2.6,1,ctn[4]],
       [-7.6,-5.6,-12.8,-9.4,3,1,sandW],[5.6,7.6,-12.8,-9.4,3,1,sandW],[-15.2,-13.2,-6.5,-1.5,3,1,sandW],[13.2,15.2,-6.5,-1.5,3,1,sandW],
       [-3.6,-2.2,-8.4,-7,1.05,0,crate],[2.2,3.6,-8.4,-7,1.05,0,crate],[-6.5,-4.9,7,8.6,1.05,0,crate],[4.9,6.5,7,8.6,1.05,0,crate],[-2.6,2.6,9.4,10,1.05,0,M.conc]],
     spawns:[[0,11.5],[-4.8,-10.6],[4.8,-10.6],[-2.8,-12.3],[-11,-6],[11,-6]]});
   // fábrica: el objetivo está en la esquina noreste, tras un hueco entre dos muros
-  arena('sd2',0,1,32,26,{name:'Fábrica',title:'OBJETIVO B',wh:4.4,floor:flo(9,8,0x8d9096),wall:steelW,site:[9,-10.5],
+  arena('sd2',0,1,32,26,{name:'Fábrica',title:'OBJETIVO B',carve:[[-16,-6,-13,-5]],cut:[[1,1,6]],wh:4.4,floor:flo(9,8,0x8d9096),wall:steelW,site:[9,-10.5],
     cov:[[4.4,6,-12.8,-8.6,3,1,steelW],[12,13.6,-12.8,-8.6,3,1,steelW],[-11,-5,2,4.4,2.6,1,ctn[3]],[1.5,7.5,2,4.4,2.6,1,ctn[1]],[-2.4,0,-8,-2,2.6,1,ctn[0]],
       [-15.2,-13.2,-8,-2,3,1,steelW],[11,13.4,-4,.2,2.6,1,ctn[4]],[3.2,4.8,-6.4,-5,1.05,0,crate],[10.5,12,-7,-5.6,1.05,0,crate],[-8,-6.4,7,8.6,1.05,0,crate],[4,6,8,9.6,1.05,0,crate],[-8,-3,9.4,10,1.05,0,M.conc]],
     spawns:[[-6,11.5],[11,-12.2],[3,-10.5],[14,-7],[-5,-6],[-9,-1]]});
   // almacén oeste: el objetivo está en el extremo oeste, en una nave abierta hacia el este
-  arena('sd3',0,2,30,26,{name:'Almacén oeste',title:'OBJETIVO C',door:[-8.9,-8.3,-4.4,1.4],dst:[-7.6,-1.5,-8.9,-1.5],mech:'Puerta blindada: el objetivo está encerrado, vuela la puerta (E) para entrar.',wh:4.4,floor:flo(8,8,0xa59a86),wall:brickW,site:[-11.5,-1.5],
+  arena('sd3',0,2,30,26,{name:'Almacén oeste',title:'OBJETIVO C',cut:[[1,-1,7],[1,1,5]],door:[-8.9,-8.3,-4.4,1.4],dst:[-7.6,-1.5,-8.9,-1.5],mech:'Puerta blindada: el objetivo está encerrado, vuela la puerta (E) para entrar.',wh:4.4,floor:flo(8,8,0xa59a86),wall:brickW,site:[-11.5,-1.5],
     cov:[[-15,-8.8,-5.6,-4.4,3,1,brickW],[-15,-8.8,1.4,2.6,3,1,brickW],[-4,2,-3,-.6,2.6,1,ctn[1]],[-4,-1.6,4,10.1,2.6,1,ctn[0]],[4,6.4,-8,-1.9,2.6,1,ctn[2]],[8.5,14,-1,1.4,2.6,1,ctn[4]],
       [-7,-5.4,5,6.6,1.05,0,crate],[0,1.6,-8.6,-7,1.05,0,crate],[10,12,-8,-6.4,1.05,0,crate],[4,12,9.4,10,1.05,0,M.conc]],
     spawns:[[8,11.5],[-9.8,-3.4],[-13,.4],[-9.5,.8],[-6,-6],[0,-4.8]]});
@@ -884,33 +890,33 @@ const IMAPS={},IM_MAPS={duel:['duel','duel2','duel3'],sd:['sd','sd2','sd3'],ffa:
   imBombM.visible=false;scene.add(imBombM);
   // ===== Contra todos =====
   // patio: 26 x 26 m, cruz central, molinillo de muros y cajas bajas en las esquinas
-  arena('ffa',150,0,26,26,{name:'Patio',title:'PATIO',wh:4.4,floor:flo(8,8,0xa9a69c),wall:mat({map:TX.conc(4,1.5),color:0x8f948f}),
+  arena('ffa',150,0,26,26,{name:'Patio',title:'PATIO',cut:[[-1,-1,5],[1,-1,5],[1,1,5],[-1,1,5]],wh:4.4,floor:flo(8,8,0xa9a69c),wall:mat({map:TX.conc(4,1.5),color:0x8f948f}),
     cov:[[-4.4,4.4,-1.22,1.22,2.6,1,ctn[1]],[-1.22,1.22,-4.4,4.4,2.62,1,ctn[0]],
       [-10.5,-8,-6.5,-2.5,3,1,wallM],[8,10.5,2.5,6.5,3,1,wallM],[2.5,6.5,-10.5,-8,3,1,wallM],[-6.5,-2.5,8,10.5,3,1,wallM],
       [5,7,5,7,1.05,0,crate],[-7,-5,5,7,1.05,0,crate],[5,7,-7,-5,1.05,0,crate],[-7,-5,-7,-5,1.05,0,crate]],
-    spawns:[[-11.5,-11.5],[11.5,-11.5],[-11.5,11.5],[11.5,11.5],[0,-11.5],[0,11.5],[-11.5,0],[11.5,0]]});
+    spawns:[[-9,-9],[9,-9],[-9,9],[9,9],[0,-11.5],[0,11.5],[-11.5,0],[11.5,0]]});
   // almacén: 28 x 22 m, estanterías altas y contenedores en el centro
-  arena('ffa2',150,1,28,22,{name:'Almacén',title:'ALMACÉN',crate:[4.9,0],mech:'Caja de armas en el lado este: un arma temporal muy potente.',wh:4.8,floor:flo(8,7,0x9a9890),wall:brickW,
+  arena('ffa2',150,1,28,22,{name:'Almacén',title:'ALMACÉN',carve:[[6,14,-11,-6]],crate:[4.9,0],mech:'Caja de armas en el lado este: un arma temporal muy potente.',wh:4.8,floor:flo(8,7,0x9a9890),wall:brickW,
     cov:[[-8,-6.8,-7,0,3,1,M.locker],[-8,-6.8,2.5,8.5,3,1,M.locker],[6.8,8,-8.5,-2.5,3,1,M.locker],[6.8,8,0,7,3,1,M.locker],[-3.5,3.5,-1.2,1.2,2.6,1,ctn[2]],
       [-2,0,-6,-4.5,1.05,0,crate],[0,2,4.5,6,1.05,0,crate],[-12,-10.5,-5,-3.5,1.05,0,crate],[10.5,12,3.5,5,1.05,0,crate]],
-    spawns:[[-12.5,-9],[12.5,-9],[-12.5,9],[12.5,9],[0,-9.5],[0,9.5],[-12.5,0],[12.5,0]]});
+    spawns:[[-12.5,-9],[11,-4],[-12.5,9],[12.5,9],[0,-9.5],[0,9.5],[-12.5,0],[12.5,0]]});
   // anillo: 24 x 24 m, cuatro contenedores en molinillo alrededor de un centro abierto
-  arena('ffa3',150,2,24,24,{name:'Anillo',title:'ANILLO',zone:{r0:16,r1:4},mech:'La zona se cierra: fuera del círculo rojo pierdes vida.',wh:4.4,floor:flo(7,7,0xb0a590),wall:sandW,
+  arena('ffa3',150,2,24,24,{name:'Anillo',title:'ANILLO',cut:[[-1,-1,5],[1,-1,5],[1,1,5],[-1,1,5]],zone:{r0:16,r1:4},mech:'La zona se cierra: fuera del círculo rojo pierdes vida.',wh:4.4,floor:flo(7,7,0xb0a590),wall:sandW,
     cov:[[-5.5,-.5,-5.5,-3.1,2.6,1,ctn[0]],[3.1,5.5,-5.5,-.5,2.6,1,ctn[1]],[.5,5.5,3.1,5.5,2.6,1,ctn[3]],[-5.5,-3.1,.5,5.5,2.6,1,ctn[2]],
       [-10,-8.5,-10,-8.5,1.05,0,crate],[8.5,10,-10,-8.5,1.05,0,crate],[-10,-8.5,8.5,10,1.05,0,crate],[8.5,10,8.5,10,1.05,0,crate]],
     spawns:[[-10.5,-6],[-10.5,6],[10.5,-6],[10.5,6],[-5,-10.5],[5,-10.5],[-5,10.5],[5,10.5]]});
   // callejón: 32 x 20 m, muros altos escalonados que dibujan un recorrido en zigzag
-  arena('ffa4',150,3,32,20,{name:'Callejón',title:'CALLEJÓN',crate:[-1,0],mech:'Caja de armas en el centro: un arma temporal muy potente.',wh:4.6,floor:flo(10,6,0x85888a),wall:steelW,
+  arena('ffa4',150,3,32,20,{name:'Callejón',title:'CALLEJÓN',cut:[[-1,-1,5],[1,1,5]],crate:[-1,0],mech:'Caja de armas en el centro: un arma temporal muy potente.',wh:4.6,floor:flo(10,6,0x85888a),wall:steelW,
     cov:[[-10,-8.8,-10,-2.5,3,1,wallM],[-5,-3.8,2.5,10,3,1,wallM],[0,1.2,-10,-2.5,3,1,wallM],[5,6.2,2.5,10,3,1,wallM],[10,11.2,-10,-2.5,3,1,wallM],
       [-7.5,-6,-1,1,1.05,0,crate],[2.5,4,-1,1,1.05,0,crate],[7.5,9,-1,1,1.05,0,crate]],
-    spawns:[[-14.5,-8],[-14.5,8],[14.5,-8],[14.5,8],[-7.5,-8],[-2.5,8],[2.5,-8],[7.5,8]]});
+    spawns:[[-12,-6],[-14.5,8],[14.5,-8],[12,6],[-7.5,-8],[-2.5,8],[2.5,-8],[7.5,8]]});
   // ===== Duelo de francotiradores (larga distancia) =====
-  arena('snip',-150,3,12,46,{name:'Largo alcance',title:'LARGO ALCANCE',wh:4.6,floor:flo(4,14,0x8d8a80),wall:brickW,
+  arena('snip',-150,3,12,46,{name:'Largo alcance',title:'LARGO ALCANCE',cut:[[-1,-1,4],[1,-1,4],[1,1,4],[-1,1,4]],wh:4.6,floor:flo(4,14,0x8d8a80),wall:brickW,
     cov:[[-3,3,-.6,.6,1.05,0,M.conc],[-6,-2.4,-12,-10,3,1,wallM],[2.4,6,-5,-3,3,1,wallM],[-6,-2.4,4,6,3,1,wallM],[2.4,6,11,13,3,1,wallM],[-2.5,-.5,15,16.2,1.05,0,crate],[.5,2.5,-16.2,-15,1.05,0,crate],[-1,1,-8,-7.2,1.05,0,M.metal],[-1,1,7.2,8,1.05,0,M.metal]],
     spawns:[[0,20.5],[0,-20.5]]});
-  arena('snip2',-150,4,16,40,{name:'Cañón',title:'CAÑÓN',wh:5,floor:flo(5,12,0xb0a58c),wall:sandW,
+  arena('snip2',-150,4,16,40,{name:'Cañón',title:'CAÑÓN',cut:[[-1,-1,5],[1,-1,5],[1,1,5],[-1,1,5]],wh:5,floor:flo(5,12,0xb0a58c),wall:sandW,
     cov:[[-8,-4.5,-8,-5,3,1,ctn[0]],[4.5,8,5,8,3,1,ctn[1]],[-2,2,-2,2,2.6,1,ctn[3]],[-8,-6,6,12,2.6,1,ctn[2]],[6,8,-12,-6,2.6,1,ctn[4]],[-3.4,-1.8,12,13.4,1.05,0,crate],[1.8,3.4,-13.4,-12,1.05,0,crate]],
-    spawns:[[-5,17.5],[5,-17.5]]});
+    spawns:[[-1,17.5],[1,-17.5]]});
   // zona que se cierra (anillo y pared roja) y caja de armas: se colocan al elegir mapa
   imZoneM=new THREE.Group();{const rg=new THREE.Mesh(new THREE.RingGeometry(.97,1,72),new THREE.MeshBasicMaterial({color:0xff3a2a,side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false,fog:false}));rg.rotation.x=-PI/2;rg.position.y=.12;
     const wl=new THREE.Mesh(new THREE.CylinderGeometry(1,1,4,72,1,true),new THREE.MeshBasicMaterial({color:0xff2a18,side:THREE.DoubleSide,transparent:true,opacity:.12,depthWrite:false,fog:false}));wl.position.y=2;imZoneM.add(rg,wl)}imZoneM.visible=false;scene.add(imZoneM);
@@ -1054,7 +1060,7 @@ const OMAPS={};
     const gr=new THREE.Mesh(new THREE.PlaneGeometry(w+300,d+300),mat({map:gt,roughness:1}));gr.rotation.x=-PI/2;gr.position.set(cx,.02,Z);gr.receiveShadow=true;scene.add(gr);
     const blk=(x,z,r,tall)=>cov.push({cx:X(x),cz:Y(z),r,tall:tall!==false}),rect=(x0,x1,z0,z1,tall)=>{const c={x0:X(x0),x1:X(x1),z0:Y(z0),z1:Y(z1),tall:tall!==false};cov.push(c);return c};
     const hit=(x,z,m)=>{const a=X(x),b=Y(z);for(const c of cov){if(c.off)continue;if(c.r){const dx=a-c.cx,dz=b-c.cz,q=c.r+m;if(dx*dx+dz*dz<q*q)return true}else if(a>c.x0-m&&a<c.x1+m&&b>c.z0-m&&b<c.z1+m)return true}return false};
-    const kept=(x,z)=>kz.some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]);
+    const kept=(x,z)=>(o.inside&&!o.inside(x,z))||kz.some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]);
     const add=(k,x,z,s,ry,sxz)=>{(ins[k]=ins[k]||[]).push([X(x),Y(z),s,ry||0,sxz||s]);if(KR[k])blk(x,z,KR[k]*s)};
     // perímetro: cresta alta; fuera, un anillo de vegetación o rocas
     const rk=ROCKM[th];B(w+1,wh,.8,rk,0,wh/2,-hd-.4);B(w+1,wh,.8,rk,0,wh/2,hd+.4);B(.8,wh,d,rk,-hw-.4,wh/2,0);B(.8,wh,d,rk,hw+.4,wh/2,0);
@@ -1065,13 +1071,13 @@ const OMAPS={};
     const door=(x0,x1,z,m)=>{const dc=rect(x0,x1,z-.3,z+.3,true),mesh=B(x1-x0,3.6,.6,m,(x0+x1)/2,1.8,z);doors.push({c:dc,mesh,x:X((x0+x1)/2),z:Y(z)});kz.push([x0-3,x1+3,z-4.5,z+4.5])};
     const seg=(x0,x1,z,st)=>{const S=STY[st];if(st==='water'){B(x1-x0,.06,S.t,M2.water,(x0+x1)/2,.07,z,1);rect(x0,x1,z-S.t/2,z+S.t/2,false);return}
       const m=st==='cliff'?rk:st==='wood'?M2.wood:st==='ice'?M2.ice:M2.metal;for(let a=x0;a<x1-.01;){const b=Math.min(x1,a+5+R()*4),h=S.h[0]+R()*(S.h[1]-S.h[0]);B(b-a,h,S.t,m,(a+b)/2,h/2,z);rect(a,b,z-S.t/2,z+S.t/2,true);a=b}};
-    const Ls=o.lines.map(L=>L.z),zs=[hd,...Ls,-hd];
+    const Ls=(o.lines||[]).map(L=>L.z),zs=[hd,...Ls,-hd];
     if(o.shuttle){const sh=o.shuttle,x=sh[0],z=sh[1];   // transbordador: fuselaje con escotilla (puerta 0) hacia el frente
       B(12,.3,16,M2.white,x,.18,z);for(const sx of[-1,1])B(.4,3.4,16,M2.white,x+sx*6,1.7,z);B(12,.4,16,M2.white,x,3.5,z);B(12.4,3.8,.5,M2.white,x,1.9,z+8);B(5,3.4,.4,M2.white,x-3.5,1.7,z-8);B(5,3.4,.4,M2.white,x+3.5,1.7,z-8);
       rect(x-6.2,x-5.8,z-8,z+8);rect(x+5.8,x+6.2,z-8,z+8);rect(x-6.2,x+6.2,z+7.8,z+8.2);rect(x-6,x-1,z-8.2,z-7.8);rect(x+1,x+6,z-8.2,z-7.8);
       for(const sx of[-1,1])B(10,.25,3,M2.white,x+sx*10.5,1,z+1);B(2.4,2.4,3,M2.dark,x-3,1.5,z+5);B(2.4,2.4,3,M2.dark,x+3,1.5,z+5);for(let i=0;i<3;i++)B(.2,.2,.2,M2.glow,x-1+i,2.2,z+7.7);
       door(x-1,x+1,z-8,M2.metal);air.push([X(x-5.8),X(x+5.8),Y(z-8),Y(z+8)]);kz.push([x-8,x+8,z-10,z+10])}
-    o.lines.forEach((L,i)=>{if(o.shuttle&&i===0)return;const g0=L.g[0],g1=L.g[1],z=L.z;seg(-hw,g0,z,L.st);seg(g1,hw,z,L.st);
+    (o.lines||[]).forEach((L,i)=>{if(o.shuttle&&i===0)return;const g0=L.g[0],g1=L.g[1],z=L.z;seg(-hw,g0,z,L.st);seg(g1,hw,z,L.st);
       if(L.st==='water'){B(g1-g0,.16,S6(),M2.wood,(g0+g1)/2,.12,z,1)}door(g0,g1,z,L.blind||L.st==='bulk'?M2.metal:L.st==='ice'?M2.ice:M2.wood)});
     function S6(){return STY.water.t+.5}
     kz.push([-5,5,hd-12,hd-3]);
@@ -1099,6 +1105,10 @@ const OMAPS={};
     const put=(k,kind,n,args,m)=>{const[zt,zb]=band(k);for(let t=0,c=0;c<n&&t<n*30;t++){const x=-hw+2.5+R()*(w-5),z=zb+2.5+R()*(zt-zb-5);if(kept(x,z)||hit(x,z,m||2.4))continue;c++;const s=args&&args.s?args.s[0]+R()*(args.s[1]-args.s[0]):1;
       if(kind==='cabin')SP.cabin(x,z,args.a,args.b,args.wm,args.rm,args.ar);else if(kind==='sandbags')SP.sandbags(x,z,args.len||5);else if(kind==='ruin')SP.ruin(x,z,args.len||6);else if(kind==='crater')SP.crater(x,z,args.r[0]+R()*(args.r[1]-args.r[0]));else SP[kind](x,z,s)}};
     o.build({SP,put,rect,blk,B,hit,kz,X,Y,R,hw,hd,zs,band,M2,th,add,air,door});
+    // contra todos: puntos de aparición dentro de la forma y vegetación decorativa fuera de ella
+    let spawns=[];if(o.ffa){const sp=[];for(let t=0;t<4000&&sp.length<14;t++){const x=-hw+3+R()*(w-6),z=-hd+3+R()*(d-6);if(o.inside(x,z)&&!hit(x,z,1.4)&&sp.every(p=>Math.hypot(p[0]-x,p[1]-z)>13))sp.push([x,z])}spawns=sp.map(p=>[X(p[0]),Y(p[1])]);
+      const dk=th==='forest'?'pine':th==='snow'?'spine':th==='desert'?'srock':'mrock';for(let t=0;t<260;t++){const x=-hw-6+R()*(w+12),z=-hd-6+R()*(d+12);if(o.inside(x,z)||(Math.abs(x)<hw&&Math.abs(z)<hd&&o.inside(x*.9,z*.9)))continue;
+        const s=dk==='pine'||dk==='spine'?1.1+R()*.8:2+R()*2.5;(ins[dk]=ins[dk]||[]).push([X(x),Y(z),s,R()*6,s])}}
     // objetos instanciados
     const dm=new THREE.Object3D();for(const k in ins){const list=ins[k];for(const p of PARTS[k]){const im=new THREE.InstancedMesh(p[0],p[1],list.length);
       list.forEach((q,i)=>{const s=q[2],ry=q[3],ox=p[2]*s,oz=p[4]*s,c=Math.cos(ry),sn=Math.sin(ry);dm.position.set(q[0]+ox*c+oz*sn,p[3]*s+.02,q[1]-ox*sn+oz*c);dm.rotation.set(0,ry,0);dm.scale.set(q[4],s,q[4]);dm.updateMatrix();im.setMatrixAt(i,dm.matrix)});
@@ -1107,9 +1117,9 @@ const OMAPS={};
     const foes=[],fok=(x,z)=>!hit(x,z,.9)&&!foes.some(f=>Math.hypot(f[0]-x,f[1]-z)<2.6);
     const fg=(k,sec,n,hv,hold)=>{const[zt,zb]=band(k);for(let t=0,c=0;c<n&&t<n*60;t++){const x=-hw+3+R()*(w-6),z=zb+3+R()*(zt-zb-6);if(!fok(x,z)||Math.hypot(x-o.spawn[0],z-o.spawn[1])<14)continue;foes.push([x,z,sec,R()<hold?1:0,c<hv?1:0]);c++}};
     const bf=(x,z,sec,hv,hold,boss)=>{foes.push([x,z,sec,hold,hv?1:0,boss?1:0])};
-    o.foes({fg,bf,foes,hit,band});
+    if(o.foes)o.foes({fg,bf,foes,hit,band});
     const cc=cov.length;
-    return OMAPS[id]=STMAPS[id]={id,cx,Z,w,d,cov,doors,rects:[[cx-hw,cx+hw,Z-hd,Z+hd]],b:[cx-hw+.4,cx+hw-.4,Z-hd+.4,Z+hd-.4],spawn:o.spawn,foes,env:th==='moon'?'space':th,vac:space,grav:space,air,suit:null,nCov:cc}};
+    return OMAPS[id]=STMAPS[id]={id,cx,Z,w,d,cov,doors,rects:[[cx-hw,cx+hw,Z-hd,Z+hd]],b:[cx-hw+.4,cx+hw-.4,Z-hd+.4,Z+hd-.4],spawn:o.spawn,foes,env:th==='moon'?'space':th,vac:space&&!o.ffa,grav:space&&!o.ffa,air,suit:null,nCov:cc,name:o.name||id,spawns}};
   // ---- bosque: campamento → río → cresta → aserradero → bosque profundo → pabellón de caza ----
   omap('bosque',-1200,-100,76,190,{th:'forest',seed:11,spawn:[0,88],
     lines:[{z:64,g:[-8,0],st:'wood'},{z:36,g:[-2,6],st:'water'},{z:8,g:[8,16],st:'cliff'},{z:-20,g:[-14,-6],st:'cliff',blind:1},{z:-52,g:[-3,5],st:'cliff'}],
@@ -1143,6 +1153,21 @@ const OMAPS={};
       put(4,'tower',2,null,3);put(4,'sandbags',6,{len:6},2.2);put(4,'cabin',2,{a:9,b:6,wm:M2.adobe,rm:M2.adobe},5);put(4,'rock',14,{s:[1,2]});put(4,'cactus',8,{s:[.9,1.3]});
       SP.cabin(0,-84,28,16,M2.adobe,M2.adobe);for(const a of[-1,1])for(let i=0;i<3;i++)SP.column(a*16,-72+i*-.1+(i-1)*5);put(5,'cactus',6,{s:[.9,1.3]});put(5,'rock',7,{s:[.9,1.5]});put(5,'sandbags',3,{len:5},2.2)},
     foes:({fg,bf})=>{fg(0,0,7,0,.5);fg(1,1,10,1,.5);fg(2,2,12,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,6,2,.3);bf(0,-88,6,1,1,1);bf(-6,-80,6,0,1);bf(6,-80,6,0,1);bf(-10,-79,6,1,1);bf(10,-79,6,1,1)}});
+  // ---- contra todos: cuatro mapas de formas irregulares (el quinto es el puerto de contenedores) ----
+  const pip=(x,z,P)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+  const ring=(P,pts,s,k)=>{for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3.4);for(let q=0;q<n;q++){const t=q/n;P.add(k,a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,s*(.95+((i*7+q*3)%5)*.05),((i+q)*1.7)%6)}}};
+  const circ=(r,n)=>Array.from({length:n},(_,i)=>[Math.cos(i/n*PI*2)*r,Math.sin(i/n*PI*2)*r]);
+  const HEX=[[-24,-10],[-12,-27],[12,-24],[27,-6],[20,22],[-8,27],[-26,14]];
+  omap('ffa_claro',-2800,-100,72,72,{th:'forest',seed:51,spawn:[0,0],ffa:1,name:'Claro del bosque',wh:8,inside:(x,z)=>Math.hypot(x,z)<26.2,
+    build:P=>{const{put,M2}=P;ring(P,circ(28.4,26),2.2,'rock');put(0,'cabin',1,{a:7,b:5.5,wm:M2.wood,rm:M2.plank},4.5);put(0,'tent',2,null,3.4);put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'pine',26,{s:[.9,1.4]});put(0,'oak',9,{s:[.9,1.3]});put(0,'rock',9,{s:[.8,1.5]});put(0,'barrels',2,null,2)}});
+  omap('ffa_aldea',-3200,-100,72,72,{th:'snow',seed:53,spawn:[0,0],ffa:1,name:'Aldea nevada',wh:9,inside:(x,z)=>pip(x,z,HEX.map(p=>[p[0]*.93,p[1]*.93])),
+    build:P=>{const{put,M2}=P;ring(P,HEX.concat(),2.3,'irock');put(0,'dome',3,null,4.4);put(0,'truck',2,null,3.6);put(0,'tent',2,null,3.4);put(0,'sandbags',4,{len:5},2.2);put(0,'crates',3,null,2);put(0,'tower',1,null,3);put(0,'spine',20,{s:[.9,1.5]});put(0,'rock',9,{s:[.8,1.5]});put(0,'cabin',1,{a:9,b:6,wm:M2.conc,rm:M2.snowR},5)}});
+  omap('ffa_cantera',-3600,-100,68,68,{th:'desert',seed:57,spawn:[0,0],ffa:1,name:'Cantera en cruz',wh:8,inside:(x,z)=>Math.abs(x)<10.5||Math.abs(z)<10.5,
+    build:P=>{const{put,SP,M2,rect,B}=P;for(const sx of[-1,1])for(const sz of[-1,1]){const x0=sx>0?10.5:-34,x1=sx>0?34:-10.5,z0=sz>0?10.5:-34,z1=sz>0?34:-10.5;rect(x0,x1,z0,z1,true);B(x1-x0,7,z1-z0,M2.srock,(x0+x1)/2,3.5,(z0+z1)/2)}
+      SP.column(-3,-3);SP.column(3,-3);SP.column(-3,3);SP.column(3,3);put(0,'ruin',4,{len:6},4);put(0,'cabin',2,{a:8,b:6,wm:M2.adobe,rm:M2.adobe},5);put(0,'cactus',10,{s:[.9,1.3]});put(0,'rock',8,{s:[.8,1.4]});put(0,'crates',3,null,2);put(0,'truck',2,null,3.6);put(0,'sandbags',4,{len:5},2.2);put(0,'tent',2,null,3.4)}});
+  omap('ffa_crater',-4000,-100,72,72,{th:'moon',seed:59,spawn:[0,0],ffa:1,name:'Cráter lunar',wh:10,inside:(x,z)=>Math.hypot(x,z)<26.2,
+    build:P=>{const{put,SP}=P;ring(P,circ(28.4,26),2.3,'mrock');for(let i=0;i<5;i++){const a=i/5*PI*2+.4;P.add('mrock',Math.cos(a)*9,Math.sin(a)*9,1.7,a);P.add('mrock',Math.cos(a+.3)*9.6,Math.sin(a+.3)*9.6,1.3,a)}
+      put(0,'crater',6,{r:[3,6]},0);put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'dish',1,null,3);put(0,'panel',1,null,6);put(0,'rock',12,{s:[.9,1.7]});put(0,'antenna',1,null,3)}});
   // ---- luna: transbordador → campo de aterrizaje → granja solar → cráter minero → antenas → módulo de mando ----
   omap('luna',-2400,-100,80,190,{th:'moon',seed:41,wh:10,spawn:[0,88],shuttle:[0,86],
     lines:[{z:78,g:[-1,1],st:'bulk'},{z:36,g:[-6,2],st:'bulk'},{z:6,g:[8,16],st:'cliff'},{z:-24,g:[-14,-6],st:'bulk',blind:1},{z:-54,g:[-3,5],st:'cliff'}],
@@ -1592,7 +1617,11 @@ function splashBots(x,y,z,r,dmg,direct,head){let any=false;for(const b of bots.s
 // ---------- contra todos: diez tiradores, gana el primero en llegar a 30 bajas ----------
 const FFA_N=['Tú','Lobo','Cuervo','Víbora','Toro','Halcón','Zorro','Tejón','Lince','Búfalo'],FFA_GOAL=30,ffa={on:false,sc:[],endT:0,win:''};
 function ffaSpawn(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1],wi:pickOf(POOLS.mp)})}
-function ffaStart(){ffa.on=true;ffa.endT=0;ffa.sc=FFA_N.map(n=>({n,k:0,d:0}));const q=spawnPt(0);px=q[0];pz=q[1];for(let i=1;i<10;i++)ffaSpawn(i);note('Contra todos',`Diez tiradores, cada uno por su cuenta. Todos con 50 de vida y sin blindaje; el daño de las armas está nivelado. Gana el primero que llegue a ${FFA_GOAL} bajas`)}
+let ffaMap=null,FFA0=null,ffaForce=-1;
+// cada partida se juega en un mapa al azar: el puerto de contenedores o una de las cuatro variantes irregulares
+function ffaPick(){if(!FFA0)FFA0={rects:AREAS[2].rects,cov:AREAS[2].cov,b:AREAS[2].b,spawns:AREAS[2].spawns};const l=[null,OMAPS.ffa_claro,OMAPS.ffa_aldea,OMAPS.ffa_cantera,OMAPS.ffa_crater],M=l[ffaForce>=0?ffaForce:Math.floor(rnd()*l.length)];ffaMap=M;
+  Object.assign(AREAS[2],M?{rects:M.rects,cov:M.cov,b:M.b,spawns:M.spawns}:FFA0);return M}
+function ffaStart(){const FM=ffaPick();ffa.on=true;ffa.endT=0;ffa.sc=FFA_N.map(n=>({n,k:0,d:0}));const q=spawnPt(0);px=q[0];pz=q[1];for(let i=1;i<10;i++)ffaSpawn(i);note('Contra todos · '+(FM?FM.name:'Puerto'),`Diez tiradores, cada uno por su cuenta. Todos con 50 de vida y sin blindaje; el daño de las armas está nivelado. Gana el primero que llegue a ${FFA_GOAL} bajas`)}
 function ffaScore(k,v){if(!ffa.on||ffa.endT>0)return;ffa.sc[k].k++;if(v!==undefined)ffa.sc[v].d++;if(ffa.sc[k].k<FFA_GOAL)return;
   ffa.endT=6;ffa.win=ffa.sc[k].n;const pos=ffa.sc.slice().sort((a,b)=>b.k-a.k).findIndex(q=>q.n==='Tú')+1,m=Math.round((k===0?40:Math.max(4,22-pos*2))*Math.max(1,S.unit)*medalMult());earn(m);if(k===0&&svS)svS.stat.ffaWins++;
   for(const b of bots)b.tg=null;slowMo(3);if(FX)sfx.radio();banner(k===0?'Victoria':'Fin de la partida',(k===0?'Has llegado a '+FFA_GOAL+' bajas':'Gana '+ffa.win+' · quedas en el puesto '+pos+' con '+ffa.sc[0].k+' bajas'))}
@@ -1605,13 +1634,22 @@ const MIS_E=[[-20,0,0,1],[18,2,0,0],[-10,-8,0,0],[12,-9,0,1],[0,-4,0,0],[-25,-10
  [0,-48,2,0],[-11,-48,2,0],[11,-56.5,2,1],[5,-49,2,0],
  [-12,-55.5,3,1],[-5,-60,3,1],[-10,-62.8,3,1],[-12.6,-62.6,3,1,1]];
 const mis={on:false,stage:0,breachT:0,endT:0,won:false,suit:true};const grv=()=>area===3&&!!stMap&&!!stMap.grav,inAir=(x,z)=>!!stMap&&stMap.air.some(inR(x,z));
-const misLeft=sec=>{let n=0;for(const b of bots)if(b.team===1&&b.st===1&&b.sec===sec)n++;return n};
-function misStart(){if(stIdx>0){misStart2();return}Object.assign(AREAS[3],A3);stMap=null;mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;misC1.off=false;misC2.off=false;px=MX;pz=19;yaw=0;
+const misLeft=sec=>{let n=0;for(const b of bots)if(b.team===1&&b.st===1&&b.sec===sec)n++;const w=mis.wv&&mis.wv[sec];return n+(w?w.k*w.n:0)};
+// refuerzos: al quedar pocos enemigos en una zona llegan nuevas oleadas, y la etapa no acaba hasta abatirlas
+function wvInit(i){const ws=STORY[i].waves||{};mis.wv={};const src=i>0&&stMap?stMap.foes.map(e=>[stMap.cx+e[0],stMap.Z+e[1],e[2]]):MIS_E.map(e=>[MX+e[0],e[1],e[2]]);
+  for(const k in ws){const pool=src.filter(e=>e[2]==k);mis.wv[k]={k:ws[k],n:Math.max(3,Math.round(pool.length*.4)),pool,t:0}}}
+function wvTick(dt){if(!mis.wv)return;for(const k in mis.wv){const w=mis.wv[k];if(w.k<=0||+k>mis.stage)continue;let live=0;for(const b of bots)if(b.team===1&&b.st===1&&b.sec==k)live++;
+    if(live>2){w.t=0;continue}w.t+=dt;if(w.t<2.5)continue;w.t=0;w.k--;wvSpawn(+k,w)}}
+function wvSpawn(sec,w){const pts=w.pool.filter(p=>botOk(p[0],p[1])&&Math.hypot(p[0]-px,p[1]-pz)>11).sort(()=>rnd()-.5);let c=0;
+  for(const p of pts){if(c>=w.n)break;const x=p[0]+(rnd()-.5)*3,z=p[1]+(rnd()-.5)*3;if(!botOk(x,z)||Math.hypot(x-px,z-pz)<10)continue;const hv=sec>=2&&rnd()<.14?1:0,ps=hv?PERS[1]:imPers();mkBot({type:hv,team:1,x,z,sec,hold:false,name:hv?'Pesado':'Refuerzo',pers:ps,wi:enemyWeapon(sec,ps,hv,0)});c++}
+  if(FX){sfx.radio();note('Refuerzos','Llegan más enemigos a la zona')}}
+function misStart(){if(stIdx>0){misStart2();return}Object.assign(AREAS[3],A3);stMap=null;mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;wvInit(0);misC1.off=false;misC2.off=false;px=MX;pz=19;yaw=0;
   for(const e of MIS_E){const ps=e[4]?PERS[2]:imPers();mkBot({type:e[4]||0,team:1,x:MX+e[0],z:e[1],sec:e[2],hold:e[3],home:1,name:e[4]?'Presidente Valcárcel':e[2]===0?'Vigilante':'Guardia',pers:ps,wi:enemyWeapon(e[2],ps,e[4],e[4])})}
   [['Vega',-2.4,21.5],['Rojas',2.4,21.5],['Mora',0,22.6]].forEach(a=>mkBot({team:0,x:MX+a[1],z:a[2],name:a[0],mat:BM.ally}));
   }
 function misTick(dt){if(!mis.on)return;if(stIdx>0){misTick2(dt);return}
   if(mis.endT>0){mis.endT-=dt;if(mis.endT<=0)travel(0);return}
+  wvTick(dt);
   if(mis.stage===0&&!misLeft(0)){mis.stage=1;misC1.off=true;if(FX)sfx.radio();note('Recinto despejado','La puerta está abierta. Activa la visión nocturna antes de entrar')}
   else if(mis.stage===1&&!misLeft(1)){mis.stage=2;if(FX)sfx.radio();note('Planta baja despejada','Sube por la escalera del fondo, a la derecha. Arriba hay una puerta cerrada')}
   else if(mis.stage===2&&mis.breachT>0){const q=Math.ceil(mis.breachT*2);mis.breachT-=dt;if(Math.ceil(mis.breachT*2)<q&&FX)tone(1800,1800,.05,'square',.08);
@@ -1625,14 +1663,14 @@ const SP_N='Netanyahu',SP_T='Trump';
 const A3={rects:AREAS[3].rects,cov:AREAS[3].cov,b:AREAS[3].b};   // la mansión (misión 1); las misiones 2 y 3 cambian AREAS[3] al empezar
 // intro: [quién, texto] (quién = null → texto de situación) · stages: etapas de las misiones nuevas
 const STORY=[
- {t:'Misión 1 · La mansión',weapon:6,cine:0,d:'Objetivo: presidente Valcárcel · 4 etapas',boss:'Presidente Valcárcel',win:'El presidente Valcárcel ha caído',
+ {t:'Misión 1 · La mansión',weapon:6,cine:0,waves:{0:1,1:1,3:1},d:'Objetivo: presidente Valcárcel · 4 etapas',boss:'Presidente Valcárcel',win:'El presidente Valcárcel ha caído',
   intro:[[null,'Madrid · 03:40 · línea cifrada'],
    [SP_N,'¡Hay que acabar con él, es un peligro para el estado español!'],
    [SP_T,'Si, sin ninguna duda. Nos quiere joder nuestros planes de hacernos con el poder y despellejarnos los cimbreles.'],
    [SP_N,'¿Estás listo para desplegar tropas?'],
    [SP_T,'¡Listo!'],
    [null,'Objetivo: el presidente Valcárcel, atrincherado en su mansión. Tu equipo (Vega, Rojas y Mora) te espera en el portón.']]},
- {t:'Misión 2 · La cumbre',weapon:11,cine:1,d:'Objetivo: Gran Canciller Krüger · 5 etapas',map:'cumbre',boss:'Gran Canciller Krüger',win:'El Gran Canciller Krüger ha caído',start:'Cruza la plaza, el vestíbulo y el auditorio. Después, la sala VIP.',
+ {t:'Misión 2 · La cumbre',weapon:11,cine:1,waves:{0:1,1:2,2:2,4:1},d:'Objetivo: Gran Canciller Krüger · 5 etapas',map:'cumbre',boss:'Gran Canciller Krüger',win:'El Gran Canciller Krüger ha caído',start:'Cruza la plaza, el vestíbulo y el auditorio. Después, la sala VIP.',
   intro:[[null,'Hotel Imperial · 21:15 · cumbre de ministros'],
    ['Coronel Barragán','Agente Sombra, el Gran Canciller Krüger firma esta noche el decreto que regala las costas del país a su cuñado. No podemos permitirlo.'],
    ['Doctora Iturbe','Su escolta es de élite y tiene el hotel tomado. Entras por la plaza, cruzas el vestíbulo y te abres paso por el auditorio.'],
@@ -1647,7 +1685,7 @@ const STORY=[
    {type:'clear',sec:2,door:null,obj:'Despeja el auditorio',done:['Auditorio despejado','La sala VIP está blindada: coloca la carga en la puerta']},
    {type:'breach',st:[0,-27.4,0,-29],door:2,obj:'Coloca la carga en la puerta blindada',done:['Puerta volada','El Canciller y su guardia de élite te esperan']},
    {type:'clear',sec:4,win:true,obj:'Acaba con el Canciller y su escolta'}]},
- {t:'Misión 3 · La fortaleza',weapon:17,cine:2,d:'Objetivo: Generalísimo Orduña · 6 etapas',map:'fortaleza',boss:'Generalísimo Orduña',win:'El Generalísimo Orduña ha caído',start:'Tres anillos de defensa, una puerta blindada y un torreón. Es la misión más larga.',
+ {t:'Misión 3 · La fortaleza',weapon:17,cine:2,waves:{0:2,1:2,2:2,4:2,5:1},d:'Objetivo: Generalísimo Orduña · 6 etapas',map:'fortaleza',boss:'Generalísimo Orduña',win:'El Generalísimo Orduña ha caído',start:'Tres anillos de defensa, una puerta blindada y un torreón. Es la misión más larga.',
   intro:[[null,'Sierra de Orduña · 05:30 · niebla'],
    ['Coronel Barragán','El Generalísimo Orduña lleva veinte años gobernando desde su fortaleza y acaba de anunciar impuestos a las nubes.'],
    ['Doctora Iturbe','Tiene tres anillos: el cerco exterior, el patio de armas y la armería. Y un gran salón lleno de pesados.'],
@@ -1737,7 +1775,7 @@ const misStg=()=>stIdx>0&&stMap?STORY[stIdx].stages[mis.stage]:null;
 // la estación de la carga se coloca en la puerta de la etapa actual
 function misBr(){const s=misStg();if(s&&s.type==='breach'){const M=stMap;Object.assign(BR2,{x:M.cx+s.st[0],z:M.Z+s.st[1],lx:M.cx+s.st[2],lz:M.Z+s.st[3]})}}
 function misStart2(){const c=STORY[stIdx],M=STMAPS[c.map];stMap=M;Object.assign(AREAS[3],{rects:M.rects,cov:M.cov,b:M.b,spawns:[]});
-  mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;mis.suit=!M.vac;if(M.vac){const SU=STN.find(q=>q.id==='suit'),a=M.cx+3.5,b=M.Z+82.5;Object.assign(SU,{x:a,z:b,lx:a+1.7,lz:b})}for(const d of M.doors){d.c.off=false;d.mesh.visible=true}
+  mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;wvInit(stIdx);mis.suit=!M.vac;if(M.vac){const SU=STN.find(q=>q.id==='suit'),a=M.cx+3.5,b=M.Z+82.5;Object.assign(SU,{x:a,z:b,lx:a+1.7,lz:b})}for(const d of M.doors){d.c.off=false;d.mesh.visible=true}
   px=M.cx+M.spawn[0];pz=M.Z+M.spawn[1];yaw=0;
   for(const e of M.foes){const ps=e[4]?PERS[e[5]?2:1]:imPers();mkBot({type:e[4]||0,team:1,x:M.cx+e[0],z:M.Z+e[1],sec:e[2],hold:e[3],home:1,name:e[5]?c.boss:e[4]?'Pesado':e[2]===0?'Vigilante':'Guardia',pers:ps,wi:enemyWeapon(e[2],ps,e[4],e[5])})}
   [['Vega',-2.4,.5],['Rojas',2.4,.5],['Mora',0,1.6]].forEach(a=>mkBot({team:0,x:px+a[1],z:pz+a[2],name:a[0],mat:BM.ally}));
@@ -1749,6 +1787,7 @@ function misAdvance(c,st){if(st.door!=null){const d=stMap.doors[st.door];d.c.off
 function misAllies(dt){for(const b of bots)if(b.team===0&&b.st===1){b.hp=Math.min(b.max,b.hp+b.max*.05*dt);const d=Math.hypot(b.x-px,b.z-pz);if(d>13||(Math.abs(b.y-pgy)>1.2&&d>5)){for(let k=0;k<10;k++){const a=rnd()*6.283,x=px+Math.cos(a)*2.4,z=pz+Math.sin(a)*2.4;if(botOk(x,z)&&Math.abs(groundY(x,z)-pgy)<.6){b.x=x;b.z=z;b.y=groundY(x,z);b.gx=x;b.gz=z;break}}}}}
 function misTick2(dt){const c=STORY[stIdx],st=c.stages[mis.stage];
   if(mis.endT>0){mis.endT-=dt;if(mis.endT<=0)travel(0);return}
+  wvTick(dt);
   if(stMap.vac&&!mis.suit&&!inAir(px,pz)){php-=7*dt;hurtT=Math.max(hurtT,.2);lastHit=0;tip('vac','Sin traje','Fuera del transbordador no hay aire: ponte el traje o vuelve dentro');if(php<=0)playerDown({name:'El vacío',id:0})}
   if(st.type==='suit'){if(mis.suit)misAdvance(c,st)}
   else if(st.type==='clear'&&!misLeft(st.sec))misAdvance(c,st);
@@ -2289,11 +2328,11 @@ function render(dt){
   if(dc)deathCam(dt);canvas.classList.toggle('dead',dc);
   if(state==='cine')cineCam(dt);
   if(lobby){const t=performance.now()/1000*.13,R=Math.min(imMap.w,imMap.d)*.3;camera.position.set(imMap.cx+Math.sin(t)*R,4.8,imMap.Z+Math.cos(t)*R);camera.lookAt(imMap.cx,1,imMap.Z)}
-  const cn=state==='cine';skyM.position.set(cn?0:px,0,cn?CINE_Z:pz);{const ox=cn?0:area===1?OX:area===3?(stMap?stMap.cx:MX):area===4&&imMap?imMap.cx:0,oz=cn?CINE_Z:area===1?-28:area===2?FZ:area===3?Math.round(pz/20)*20:area===4&&imMap?imMap.Z:6;sun.position.set(ox-45,60,oz);sun.target.position.set(ox,0,oz)}
+  const cn=state==='cine';skyM.position.set(cn?0:px,0,cn?CINE_Z:pz);{const ox=cn?0:area===2&&ffaMap?ffaMap.cx:area===1?OX:area===3?(stMap?stMap.cx:MX):area===4&&imMap?imMap.cx:0,oz=cn?CINE_Z:area===1?-28:area===2?(ffaMap?ffaMap.Z:FZ):area===3?Math.round(pz/20)*20:area===4&&imMap?imMap.Z:6;sun.position.set(ox-45,60,oz);sun.target.position.set(ox,0,oz)}
   // dentro de la mansión no hay luz: casi negro sin visión nocturna
   {const inH=area===3&&pz<-14.3&&Math.abs(px-MX)<14.6;dark+=((inH?1:0)-dark)*Math.min(1,dt*3);const q=dark;hemiL.intensity=1-q*(nv?.2:.975);sun.intensity=2.3*(1-q);for(const f of fillL)f.intensity=1.1*(1-q)+(nv?.6*q:0);
     renderer.toneMappingExposure=1.05+(nv?.45:0);{const ge=dark>.5?.05:1;if(ge!==gunEnv){gunEnv=ge;gun.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial)o.material.envMapIntensity=ge})}}scene.fog.color.setRGB(.576*(1-q*.95),.647*(1-q*.95),.678*(1-q*.95))}
-  {const E=state!=='cine'&&area===3&&stMap&&OEN[stMap.env];if(E){envOn=1;scene.fog.color.setHex(E.fog);scene.fog.near=E.fn;scene.fog.far=E.ff;skyM.visible=!E.stars;skyM.material.color.setHex(E.stars?0:E.sky);starsM.visible=!!E.stars;starsM.position.copy(skyM.position);hemiL.color.setHex(E.hc);hemiL.groundColor.setHex(E.hg);hemiL.intensity*=E.hi;sun.color.setHex(E.sc);sun.intensity*=E.si/2.3}
+  {const E=state!=='cine'&&((area===3&&stMap&&OEN[stMap.env])||(area===2&&ffaMap&&OEN[ffaMap.env]));if(E){envOn=1;scene.fog.color.setHex(E.fog);scene.fog.near=E.fn;scene.fog.far=E.ff;skyM.visible=!E.stars;skyM.material.color.setHex(E.stars?0:E.sky);starsM.visible=!!E.stars;starsM.position.copy(skyM.position);hemiL.color.setHex(E.hc);hemiL.groundColor.setHex(E.hg);hemiL.intensity*=E.hi;sun.color.setHex(E.sc);sun.intensity*=E.si/2.3}
     else if(envOn){envOn=0;scene.fog.near=60;scene.fog.far=250;skyM.visible=true;skyM.material.color.setHex(0xffffff);starsM.visible=false;hemiL.color.setHex(0xcfdcec);hemiL.groundColor.setHex(0x6b6048);sun.color.setHex(0xfff0d8)}}
   const low=!inRange()||state==='menu'||sprint>.5;
   const U=gun.userData,sc=ads&&zm<20&&fov<zm+14;if(sc!==scopeOn){scopeOn=sc;$('#scope').style.display=sc?'block':'none'}gun.visible=!sc&&!lobby&&!dc&&state!=='cine';
@@ -2514,7 +2553,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   if(state!=='pause'){update(dt*k);uiAcc+=dt;if(uiAcc>.06){uiAcc=0;hud();tcHud()}saveAcc+=dt;if(saveAcc>15){saveAcc=0;saveMode()}}render(dt*k)}
 requestAnimationFrame(loop);
 window.G={get S(){return S},set S(v){S=v},update,render,hud,tryFire,keyR,startClean,startReload,buyCal,buyW,buyAtt,buyArm,equip,swapW,buySkill,buyPas,claim,targets,bots,WEAPONS,ATT,ARM,CLS,SK,CH,PAS,CAMOS,COV,skCost,calCost,pasCost,shotDmg,magSize,tArmor,tHP,tReward,fresh,resetRun,medalsFor,
-  chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,killBot,startStory,cineNext,get cine(){return cine},OMAPS,get mis(){return mis},inAir,get drops(){return drops},pickDrop,nearDrop,dropWeapon,enemyWeapon,wmOf,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
+  chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,killBot,startStory,cineNext,get cine(){return cine},ffaPick,setFfa(i){ffaForce=i},get ffaMap(){return ffaMap},wvTick,OMAPS,get mis(){return mis},inAir,get drops(){return drops},pickDrop,nearDrop,dropWeapon,enemyWeapon,wmOf,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
   get flipT(){return flipT},get gun(){return gun},raw(){renderer.render(scene,camera)},get gst(){return gst},get state(){return state},get area(){return area},get php(){return php},set php(v){php=v},get p(){return{px,pz,yaw,area}},setFX(v){FX=v},play(){if(mode==='menu')mode='sv';started=true;state='play';$('#mm').classList.add('off')},
   pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,STORY,STMAPS,get stIdx(){return stIdx},set stIdx(v){stIdx=v},get stProg(){return stProg},get mis(){return mis},misTick2,imStars,imMult,IM_MS,IM_ACH,imAch,imPrestige,imZoneR,imMech,PERS,IM_BASE,get imDeath2(){return im.tmp},imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},get imShield(){return imShield},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
   aim(t,off,h){const dx=t.x+(off||0)-px,dy=(h!==undefined?h:t.y)-eyeH(),dz=t.z-pz;yaw=Math.atan2(-dx,-dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));kick=0;bloom=0;moving=0}};
