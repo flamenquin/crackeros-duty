@@ -387,7 +387,8 @@ const STN=[{id:'arm',name:'Armero',x:-3.9,z:7.3,lx:-5,lz:7.3},{id:'bench',name:'
  {id:'plant',name:'Colocar la bomba',a:4,x:0,z:BGZ-10.5,lx:0,lz:BGZ-11.6,on:()=>im.on&&im.mode==='sd'&&im.state==='play'&&im.sd.st===0&&im.sd.plantT<=0},
  {id:'door',name:'Volar la puerta',a:4,x:0,z:0,lx:0,lz:0,on:()=>im.on&&im.mode==='sd'&&im.state==='play'&&!!imMap.door&&!im.door.open&&im.door.t<=0},
  {id:'breach',name:'Colocar carga explosiva',a:3,x:MX-9,z:-50.6,lx:MX-9,lz:-52,on:()=>mis.on&&stIdx===0&&mis.stage===2&&mis.breachT<=0},
- {id:'breach2',name:'Colocar carga explosiva',a:3,x:0,z:0,lx:0,lz:0,on:()=>mis.on&&!!misStg()&&misStg().type==='breach'&&mis.breachT<=0}];
+ {id:'breach2',name:'Colocar carga explosiva',a:3,x:0,z:0,lx:0,lz:0,on:()=>mis.on&&!!misStg()&&misStg().type==='breach'&&mis.breachT<=0},
+ {id:'suit',name:'Ponerse el traje espacial',a:3,x:0,z:0,lx:0,lz:0,on:()=>mis.on&&!!stMap&&!!stMap.vac&&!mis.suit}];
 const RECTS=[[-6.1,6.1,.55,3.3],[-.9,.9,3.2,4.1],[-3.95,3.75,4.0,10.05]],RECTS_B=[[-.85,.85,9.9,11.9],[-6.1,6.1,11.8,14.35]],BLOCK=[[-9,-1.9,3.9,5.45],[2.6,4.0,3.9,4.8]];
 const H_RECTS=[[OX-4.5,OX+4.5,.5,7.2],[OX-.75,OX+.75,-1.2,.7],[OX-29,OX+29,-57,-.9]],COV=[],COV2=[],COV3=[],NOCOV=[];
 // cada mapa: zonas pisables, coberturas (cajas o círculos), límites para los bots y puntos de aparición
@@ -476,7 +477,7 @@ const houseOpen=()=>S.dev||level()>=3;
 const zone=()=>area>=2?2:area===1?(pz<-1?2:-1):pz<3.5?0:pz>11.75?1:-1;
 const inRange=()=>zone()>=0;
 const eyeH=()=>1.66-crouch*.62+jy;   // altura de los ojos: de pie, agachado o en el aire
-function jump(){if(state!=='play'||jy>0)return;if(crouch>.5){if(S.crT||lastDev==='touch'){kb.crouch=false;padCr=false}return}vy=4.7*(area===4?JMP[hk('jump')]:1);jy=.001;sfx.step()}
+function jump(){if(state!=='play'||jy>0)return;if(crouch>.5){if(S.crT||lastDev==='touch'){kb.crouch=false;padCr=false}return}vy=4.7*(area===4?JMP[hk('jump')]:1)*(grv()?1.25:1);jy=.001;sfx.step()}
 const wUnlocked=i=>{const w=WEAPONS[i];for(let k=i-1;k>=0;k--)if(WEAPONS[k].ck===w.ck)return !!S.own[k];return true};
 const gk=()=>S.weapon+'/'+S.camo+'/'+Object.keys(S.att[S.weapon]||{}).join('');
 function earn(m){S.money+=m;S.runEarned+=m;S.totalEarned+=m}
@@ -983,6 +984,176 @@ const CINE_Z=-1100,CINESETS=[];
    for(const sx of[-1,1]){bx(g,1.7,4.6,.08,red,sx*2.9,5.2,C-8.6);bx(g,.3,4.6,.1,gold,sx*2.9,5.2,C-8.55);const t=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),new THREE.MeshBasicMaterial({color:0xff8a2a}));t.position.set(sx*4.6,2.8,C-8.3);g.add(t)}
    bx(g,8.4,.6,4.4,stone,0,.3,C-5.7);bx(g,8.4,.3,.9,stone,0,.15,C-3.2);bx(g,1.3,.5,1.2,gold,0,.85,C-6.1);bx(g,1.5,2.7,.26,gold,0,1.95,C-6.8);bx(g,.2,.7,1.1,gold,-.7,1.2,C-6.1);bx(g,.2,.7,1.1,gold,.7,1.2,C-6.1);bx(g,1.9,.4,.3,gold,0,3.4,C-6.8);
    bx(g,3,.03,15,red,0,.045,C+1);bx(g,3,.04,.9,red,0,.31,C-3.2)}
+  // 3 · tienda de mando (bosque): lona, mesa con mapa, radio y cajas
+  {const g=mk(),can=mat({color:0x59653a,roughness:1});shell(g,can);
+   bx(g,8,.95,3,wood,0,.475,C-4.6);bx(g,8.2,.06,3.2,mat({color:0xcfc6a0,roughness:.9}),0,.99,C-4.6);
+   for(let i=0;i<5;i++)bx(g,.5,.1,.5,mat({color:[0xb02a22,0x2a4f8a,0xd0b030][i%3]}),-3+i*1.5,1.05,C-4.4+(i%2)*.5);
+   bx(g,1.4,.7,1.1,dark,-6.5,.35,C-7);bx(g,1,.5,.2,glow,-6.5,.9,C-6.6);cy(g,.05,2.4,dark,-6.5,1.9,C-7);
+   for(let i=0;i<4;i++)bx(g,1.1,.9+(i%2)*.4,1.1,wood,6+(i%2)*1.1,.45,C-6+i*1.3);
+   const lm=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),glow);lm.position.set(0,3.1,C-4.6);g.add(lm);bx(g,10,.03,7,mat({color:0x3a3a2a,roughness:1}),0,.04,C-4)}
+  // 4 · búnker (nieve): hormigón, pantallas y mesa de acero
+  {const g=mk();shell(g,stone);bx(g,34,.4,26,stone,0,10,C-4);
+   for(let i=0;i<7;i++)bx(g,1.8,1.1,.1,glow,-7.2+i*2.4,2.8+(i%2)*.9,C-8.6);bx(g,18,.15,.25,dark,0,2.3,C-8.7);
+   bx(g,7,.95,2.4,mat({map:TX.metal(1),metalness:.6,roughness:.5}),0,.475,C-4.8);bx(g,7.2,.06,2.6,dark,0,.99,C-4.8);
+   for(const sx of[-1,1])bx(g,1.2,2.2,1.2,mat({color:0x2a3a4a,roughness:.5,metalness:.4}),sx*9,1.1,C-7.8);
+   bx(g,12,.03,8,mat({color:0x30343a,roughness:1}),0,.04,C-4.5);for(let i=0;i<3;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),glow);l.position.set(-4+i*4,3.6,C-4.8);g.add(l)}}
+  // 5 · majlis (desierto): alfombras, cojines, arcos y cortinas
+  {const g=mk();shell(g,plaster);
+   bx(g,12,.04,7,mat({color:0x8a2a2a,roughness:1}),0,.05,C-4.6);bx(g,10,.05,5.4,mat({color:0x2a3f7a,roughness:1}),0,.07,C-4.6);
+   for(let i=0;i<5;i++)bx(g,1.8,.45,1.1,mat({color:[0xd0a030,0x8a2a2a,0x2a6a5a][i%3],roughness:1}),-4+i*2,.25,C-7.6);
+   bx(g,3,.5,1.6,gold,0,.3,C-5.8);
+   for(const sx of[-1,1]){cy(g,.5,6,plaster,sx*5,3,C-8.4);cy(g,.5,6,plaster,sx*10,3,C-8.4);bx(g,1.8,5.6,.25,red,sx*7.6,3.3,C-8.5)}
+   bx(g,10.4,1,.8,plaster,-7.5,6,C-8.4);bx(g,10.4,1,.8,plaster,7.5,6,C-8.4);
+   for(let i=0;i<4;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),glow);l.position.set(-6+i*4,3.2,C-8.1);g.add(l)}}
+  // 6 · puente de mando (espacio): consolas, ventanal con la Tierra
+  {const g=mk(),hull=mat({color:0x2a2e36,roughness:.5,metalness:.6});shell(g,hull);bx(g,34,.4,26,hull,0,10,C-4);
+   bx(g,18,5.4,.2,new THREE.MeshBasicMaterial({color:0x02040a}),0,4.3,C-8.55);
+   const er=new THREE.Mesh(new THREE.SphereGeometry(3.4,28,16),new THREE.MeshBasicMaterial({color:0x2f6fc0}));er.position.set(3,4.6,C-8.2);g.add(er);
+   for(let i=0;i<60;i++){const st=new THREE.Mesh(new THREE.SphereGeometry(.04,4,3),glow);st.position.set(-8.5+rnd()*17,1.8+rnd()*5,C-8.3);g.add(st)}
+   for(const sx of[-1,1])for(let i=0;i<2;i++){bx(g,3.4,1,1.3,hull,sx*6.5,.5,C-7+i*2.4);bx(g,3,.05,1,glow,sx*6.5,1.02,C-7+i*2.4)}
+   bx(g,4.4,.95,1.8,hull,0,.475,C-5.3);bx(g,4,.05,1.4,glow,0,.99,C-5.3);bx(g,12,.03,8,mat({color:0x15181c,roughness:.4,metalness:.5}),0,.04,C-4.5)}
+}
+// ---------- historia: mapas abiertos (bosque, nieve, desierto, luna) ----------
+// entorno de cada mapa: niebla, cielo, luz y estrellas (en el espacio)
+const OEN={forest:{fog:0x8ea08a,fn:40,ff:175,sky:0xa9c9a2,hc:0xd6e6cc,hg:0x3a4a2a,hi:.95,si:2.1,sc:0xfff0d8},
+  snow:{fog:0xdde6ee,fn:25,ff:130,sky:0xe4ecf4,hc:0xeaf2ff,hg:0xc4d0dc,hi:1.3,si:1.7,sc:0xf0f6ff},
+  desert:{fog:0xe2c897,fn:55,ff:240,sky:0xffe2ae,hc:0xffe9c4,hg:0x9a7848,hi:1.05,si:2.9,sc:0xffe0b0},
+  space:{fog:0x000000,fn:140,ff:520,sky:0x000000,stars:1,hc:0x34405a,hg:0x14141c,hi:.6,si:3.5,sc:0xffffff}};
+let envOn=0;
+const starsM=new THREE.Group();starsM.visible=false;scene.add(starsM);
+{const n=1100,p=new Float32Array(n*3);for(let i=0;i<n;i++){const u=rnd()*2-1,a=rnd()*PI*2,r=Math.sqrt(1-u*u);p[i*3]=Math.cos(a)*r*340;p[i*3+1]=Math.abs(u)*340*.98+8;p[i*3+2]=Math.sin(a)*r*340}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));starsM.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,fog:false})));
+  const eth=ctex(256,(g2,s)=>{g2.fillStyle='#1f4f9a';g2.fillRect(0,0,s,s);for(let i=0;i<40;i++){g2.fillStyle=`rgba(${60+rnd()*40},${130+rnd()*50},70,.85)`;g2.beginPath();g2.ellipse(rnd()*s,rnd()*s,10+rnd()*30,6+rnd()*18,rnd()*3,0,7);g2.fill()}for(let i=0;i<30;i++){g2.fillStyle='rgba(255,255,255,.55)';g2.beginPath();g2.ellipse(rnd()*s,rnd()*s,16+rnd()*34,3+rnd()*7,0,0,7);g2.fill()}}),
+    earth=new THREE.Mesh(new THREE.SphereGeometry(60,32,20),new THREE.MeshBasicMaterial({map:eth,fog:false}));earth.position.set(-170,150,-250);starsM.add(earth);
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(64,24,14),new THREE.MeshBasicMaterial({color:0x6fa8ff,transparent:true,opacity:.18,side:THREE.BackSide,fog:false}));halo.position.copy(earth.position);starsM.add(halo)}
+const OMAPS={};
+{const LC=s=>{let a=s>>>0;return()=>(a=(Math.imul(a,1664525)+1013904223)>>>0)/4294967296};
+  const nt=(base,v,n,px,rx,ex)=>ctex(256,(g,q)=>{g.fillStyle=base;g.fillRect(0,0,q,q);for(let i=0;i<n;i++){const l=rnd()-.5;g.fillStyle=l>0?`rgba(255,255,255,${l*v})`:`rgba(0,0,0,${-l*v})`;g.fillRect(rnd()*q,rnd()*q,px*(1+rnd()*2),px*(1+rnd()))}if(ex)ex(g,q)},rx,rx);
+  const GT={forest:nt('#3f5d2b',.5,420,2,42,(g,q)=>{for(let i=0;i<260;i++){g.fillStyle=`rgba(${40+rnd()*30},${80+rnd()*40},30,.5)`;g.fillRect(rnd()*q,rnd()*q,2,4+rnd()*4)}}),
+    snow:nt('#e4ecf2',.3,380,2,42,(g,q)=>{for(let i=0;i<30;i++){g.fillStyle='rgba(150,175,205,.25)';g.beginPath();g.ellipse(rnd()*q,rnd()*q,10+rnd()*30,3+rnd()*7,rnd()*3,0,7);g.fill()}}),
+    desert:nt('#c8a566',.4,420,2,42,(g,q)=>{for(let y=0;y<q;y+=10){g.strokeStyle='rgba(120,80,30,.13)';g.beginPath();g.moveTo(0,y);for(let x=0;x<=q;x+=16)g.lineTo(x,y+Math.sin(x*.1+y)*3);g.stroke()}}),
+    moon:nt('#7d7d82',.5,520,2,42,(g,q)=>{for(let i=0;i<12;i++){const x=rnd()*q,y=rnd()*q,r=8+rnd()*24;g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(x,y,r,r*.8,0,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=2;g.beginPath();g.ellipse(x-1,y-1,r,r*.8,0,0,7);g.stroke()}})};
+  const M2={trunk:mat({color:0x5a3d22}),pine:mat({color:0x244a2a}),spine:mat({color:0xcfdfd6}),oak:mat({color:0x3d6a26}),cactus:mat({color:0x4e7a3a}),rock:mat({color:0x7b7a72}),irock:mat({color:0xa9bccd,roughness:.4}),srock:mat({color:0xb08a58}),mrock:mat({color:0x6a6a70}),
+    wood:mat({map:TX.wood(2,1),color:0x8a6a48}),plank:mat({map:TX.wood(2,1),color:0x4a3524}),adobe:mat({map:TX.conc(2,1),color:0xc9a56e}),conc:mat({map:TX.conc(3,1),color:0x9a9a94}),metal:mat({map:TX.metal(1),metalness:.6,roughness:.5}),
+    snowR:mat({color:0xf0f4f8}),tent:mat({color:0x5a6a3a,roughness:1}),tentS:mat({color:0xd8cfae,roughness:1}),bag:mat({color:0x8c7f5a,roughness:1}),water:mat({color:0x2b6a8f,roughness:.15,metalness:.2}),ice:mat({color:0x9fc4dc,roughness:.25,metalness:.1}),
+    white:mat({color:0xe4e6e8,roughness:.5,metalness:.3}),panel:mat({color:0x1d3a6a,roughness:.25,metalness:.7}),glow:new THREE.MeshBasicMaterial({color:0x6fe0ff}),red:mat({color:0x8a2a22,roughness:.8}),truck:mat({color:0x4d5638,roughness:.8,metalness:.3}),dark:mat({color:0x23211f,roughness:.8})};
+  const ROCKM={forest:M2.rock,snow:M2.irock,desert:M2.srock,moon:M2.mrock},WALLM={forest:M2.rock,snow:M2.irock,desert:M2.srock,moon:M2.mrock};
+  const GE={cone:(r,h,s)=>new THREE.ConeGeometry(r,h,s||9),cyl:(a,b,h,s)=>new THREE.CylinderGeometry(a,b,h,s||8),ico:(r,d)=>new THREE.IcosahedronGeometry(r,d||1),dod:r=>new THREE.DodecahedronGeometry(r,0),sph:(r)=>new THREE.SphereGeometry(r,14,8)};
+  // partes de cada tipo de objeto instanciado: [geometría, material, dx, dy, dz]
+  const PARTS={pine:[[GE.cyl(.16,.24,2.4),M2.trunk,0,1.2,0],[GE.cone(1.7,2.6),M2.pine,0,3,0],[GE.cone(1.3,2.4),M2.pine,0,4.3,0],[GE.cone(.9,2),M2.pine,0,5.5,0]],
+    spine:[[GE.cyl(.16,.24,2.4),M2.trunk,0,1.2,0],[GE.cone(1.7,2.6),M2.spine,0,3,0],[GE.cone(1.3,2.4),M2.spine,0,4.3,0],[GE.cone(.9,2),M2.spine,0,5.5,0]],
+    oak:[[GE.cyl(.2,.3,2.4),M2.trunk,0,1.2,0],[GE.ico(1.9,1),M2.oak,0,3.6,0],[GE.ico(1.2,1),M2.oak,.9,2.9,.4]],
+    cactus:[[GE.cyl(.3,.34,2.8),M2.cactus,0,1.4,0],[GE.cyl(.17,.17,1.2),M2.cactus,.6,1.9,0],[GE.cyl(.17,.17,.7),M2.cactus,.35,1.4,0],[GE.cyl(.17,.17,1),M2.cactus,-.6,1.5,0]],
+    rock:[[GE.dod(1),M2.rock,0,.55,0]],irock:[[GE.dod(1),M2.irock,0,.55,0]],srock:[[GE.dod(1),M2.srock,0,.55,0]],mrock:[[GE.dod(1),M2.mrock,0,.55,0]],
+    dune:[[GE.sph(1),M2.tentS,0,0,0]]};
+  const KR={pine:.45,spine:.45,oak:.55,cactus:.42,rock:.95,irock:.95,srock:.95,mrock:.95};
+  const STY={cliff:{h:[3.6,6],t:1.6},wood:{h:[3.2,3.8],t:.5},ice:{h:[3.4,5],t:1.4},bulk:{h:[4,4.6],t:.8},water:{t:6}};
+  const omap=(id,cx,Z,w,d,o)=>{
+    const th=o.th,cov=[],doors=[],ins={},air=[],R=LC(o.seed||7),wh=o.wh||8,hw=w/2,hd=d/2,X=x=>cx+x,Y=z=>Z+z,kz=[],B=(a,h,b,m,x,y,z,ns)=>box(a,h,b,m,X(x),y,Y(z),null,ns),space=th==='moon';
+    const gt=GT[th];
+    const gr=new THREE.Mesh(new THREE.PlaneGeometry(w+300,d+300),mat({map:gt,roughness:1}));gr.rotation.x=-PI/2;gr.position.set(cx,.02,Z);gr.receiveShadow=true;scene.add(gr);
+    const blk=(x,z,r,tall)=>cov.push({cx:X(x),cz:Y(z),r,tall:tall!==false}),rect=(x0,x1,z0,z1,tall)=>{const c={x0:X(x0),x1:X(x1),z0:Y(z0),z1:Y(z1),tall:tall!==false};cov.push(c);return c};
+    const hit=(x,z,m)=>{const a=X(x),b=Y(z);for(const c of cov){if(c.off)continue;if(c.r){const dx=a-c.cx,dz=b-c.cz,q=c.r+m;if(dx*dx+dz*dz<q*q)return true}else if(a>c.x0-m&&a<c.x1+m&&b>c.z0-m&&b<c.z1+m)return true}return false};
+    const kept=(x,z)=>kz.some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]);
+    const add=(k,x,z,s,ry,sxz)=>{(ins[k]=ins[k]||[]).push([X(x),Y(z),s,ry||0,sxz||s]);if(KR[k])blk(x,z,KR[k]*s)};
+    // perímetro: cresta alta; fuera, un anillo de vegetación o rocas
+    const rk=ROCKM[th];B(w+1,wh,.8,rk,0,wh/2,-hd-.4);B(w+1,wh,.8,rk,0,wh/2,hd+.4);B(.8,wh,d,rk,-hw-.4,wh/2,0);B(.8,wh,d,rk,hw+.4,wh/2,0);
+    const ringK=th==='forest'?'pine':th==='snow'?'spine':th==='desert'?'dune':'mrock';
+    for(let i=0;i<150;i++){const a=R()*4,t=R();let x,z;if(a<1){x=-hw-3-R()*9;z=-hd+t*d}else if(a<2){x=hw+3+R()*9;z=-hd+t*d}else if(a<3){x=-hw+t*w;z=-hd-3-R()*9}else{x=-hw+t*w;z=hd+3+R()*9}
+      const s=ringK==='dune'?3+R()*4:ringK==='mrock'?2+R()*3:1.1+R()*.7;(ins[ringK]=ins[ringK]||[]).push([X(x),Y(z),s,R()*6,ringK==='dune'?s*2.6:s]);if(ringK==='dune')ins[ringK][ins[ringK].length-1][2]=s*.5}
+    // puertas y líneas divisorias entre zonas
+    const door=(x0,x1,z,m)=>{const dc=rect(x0,x1,z-.3,z+.3,true),mesh=B(x1-x0,3.6,.6,m,(x0+x1)/2,1.8,z);doors.push({c:dc,mesh,x:X((x0+x1)/2),z:Y(z)});kz.push([x0-3,x1+3,z-4.5,z+4.5])};
+    const seg=(x0,x1,z,st)=>{const S=STY[st];if(st==='water'){B(x1-x0,.06,S.t,M2.water,(x0+x1)/2,.07,z,1);rect(x0,x1,z-S.t/2,z+S.t/2,false);return}
+      const m=st==='cliff'?rk:st==='wood'?M2.wood:st==='ice'?M2.ice:M2.metal;for(let a=x0;a<x1-.01;){const b=Math.min(x1,a+5+R()*4),h=S.h[0]+R()*(S.h[1]-S.h[0]);B(b-a,h,S.t,m,(a+b)/2,h/2,z);rect(a,b,z-S.t/2,z+S.t/2,true);a=b}};
+    const Ls=o.lines.map(L=>L.z),zs=[hd,...Ls,-hd];
+    if(o.shuttle){const sh=o.shuttle,x=sh[0],z=sh[1];   // transbordador: fuselaje con escotilla (puerta 0) hacia el frente
+      B(12,.3,16,M2.white,x,.18,z);for(const sx of[-1,1])B(.4,3.4,16,M2.white,x+sx*6,1.7,z);B(12,.4,16,M2.white,x,3.5,z);B(12.4,3.8,.5,M2.white,x,1.9,z+8);B(5,3.4,.4,M2.white,x-3.5,1.7,z-8);B(5,3.4,.4,M2.white,x+3.5,1.7,z-8);
+      rect(x-6.2,x-5.8,z-8,z+8);rect(x+5.8,x+6.2,z-8,z+8);rect(x-6.2,x+6.2,z+7.8,z+8.2);rect(x-6,x-1,z-8.2,z-7.8);rect(x+1,x+6,z-8.2,z-7.8);
+      for(const sx of[-1,1])B(10,.25,3,M2.white,x+sx*10.5,1,z+1);B(2.4,2.4,3,M2.dark,x-3,1.5,z+5);B(2.4,2.4,3,M2.dark,x+3,1.5,z+5);for(let i=0;i<3;i++)B(.2,.2,.2,M2.glow,x-1+i,2.2,z+7.7);
+      door(x-1,x+1,z-8,M2.metal);air.push([X(x-5.8),X(x+5.8),Y(z-8),Y(z+8)]);kz.push([x-8,x+8,z-10,z+10])}
+    o.lines.forEach((L,i)=>{if(o.shuttle&&i===0)return;const g0=L.g[0],g1=L.g[1],z=L.z;seg(-hw,g0,z,L.st);seg(g1,hw,z,L.st);
+      if(L.st==='water'){B(g1-g0,.16,S6(),M2.wood,(g0+g1)/2,.12,z,1)}door(g0,g1,z,L.blind||L.st==='bulk'?M2.metal:L.st==='ice'?M2.ice:M2.wood)});
+    function S6(){return STY.water.t+.5}
+    kz.push([-5,5,hd-12,hd-3]);
+    // piezas
+    const SP={pine:(x,z,s)=>add('pine',x,z,s),spine:(x,z,s)=>add('spine',x,z,s),oak:(x,z,s)=>add('oak',x,z,s),cactus:(x,z,s)=>add('cactus',x,z,s),rock:(x,z,s)=>add(th==='snow'?'irock':th==='desert'?'srock':th==='moon'?'mrock':'rock',x,z,s*(1+R()*.9),R()*6,s*(1+R()*.8)),
+      dune:(x,z,s)=>{(ins.dune=ins.dune||[]).push([X(x),Y(z),1.2+R()*.8,R()*6,5+R()*5])},
+      cabin:(x,z,a,b,wm,rm,ar)=>{const t=.4,dw=2.8;kz.push([x-a/2-1,x+a/2+1,z-b/2-1,z+b/2+1]);B(a,3,t,wm,x,1.5,z-b/2);B(t,3,b,wm,x-a/2,1.5,z);B(t,3,b,wm,x+a/2,1.5,z);B((a-dw)/2,3,t,wm,x-(a+dw)/4,1.5,z+b/2);B((a-dw)/2,3,t,wm,x+(a+dw)/4,1.5,z+b/2);B(a+.7,.3,b+.7,rm,x,3.15,z);
+        rect(x-a/2,x+a/2,z-b/2-t/2,z-b/2+t/2);rect(x-a/2-t/2,x-a/2+t/2,z-b/2,z+b/2);rect(x+a/2-t/2,x+a/2+t/2,z-b/2,z+b/2);rect(x-a/2,x-dw/2,z+b/2-t/2,z+b/2+t/2);rect(x+dw/2,x+a/2,z+b/2-t/2,z+b/2+t/2);
+        if(a>8)SP.crates(x-a/2+2,z-b/2+1.4);if(ar)air.push([X(x-a/2),X(x+a/2),Y(z-b/2),Y(z+b/2)])},
+      sandbags:(x,z,len)=>{B(len,1.05,.8,M2.bag,x,.525,z);rect(x-len/2,x+len/2,z-.4,z+.4,false)},
+      crates:(x,z)=>{B(1.1,1,1.1,M2.wood,x,.5,z);B(1,.9,1,M2.wood,x+1.1,.45,z+.3);rect(x-.55,x+1.6,z-.55,z+.8,false)},
+      barrels:(x,z)=>{for(let i=0;i<3;i++){const c=new THREE.Mesh(GE.cyl(.42,.42,1,12),i===1?M2.red:M2.truck);c.position.set(X(x+i*.9),.5,Y(z+(i%2)*.5));c.castShadow=true;scene.add(c)}rect(x-.5,x+2.3,z-.5,z+1,false)},
+      tent:(x,z)=>{const c=new THREE.Mesh(GE.cone(2.7,2.5,4),th==='desert'?M2.tentS:M2.tent);c.rotation.y=PI/4;c.position.set(X(x),1.25,Y(z));c.castShadow=true;scene.add(c);blk(x,z,1.75)},
+      dome:(x,z)=>{const c=new THREE.Mesh(new THREE.SphereGeometry(2.3,18,10,0,PI*2,0,PI/2),M2.snowR);c.position.set(X(x),0,Y(z));c.castShadow=true;scene.add(c);blk(x,z,2.3);B(1.2,1.4,1.4,M2.snowR,x,.7,z+2.2,1)},
+      truck:(x,z)=>{B(2.5,2.3,4.4,M2.truck,x,1.5,z);B(2.5,1.8,1.8,M2.truck,x,1.2,z+3.1);B(2.2,.8,.1,M2.dark,x,1.7,z+4.05);rect(x-1.3,x+1.3,z-2.3,z+4.1,true)},
+      tower:(x,z)=>{for(const a of[-1,1])for(const b of[-1,1]){B(.3,5,.3,M2.wood,x+a*1.2,2.5,z+b*1.2);blk(x+a*1.2,z+b*1.2,.35)}B(3.4,.3,3.4,M2.wood,x,5.2,z);B(3.6,.8,.15,M2.wood,x,5.7,z+1.7);B(3.6,.8,.15,M2.wood,x,5.7,z-1.7)},
+      column:(x,z)=>{const c=new THREE.Mesh(GE.cyl(.55,.62,5.6,12),M2.adobe);c.position.set(X(x),2.8,Y(z));c.castShadow=true;scene.add(c);blk(x,z,.62)},
+      ruin:(x,z,len)=>{B(len,2.6,.6,M2.adobe,x,1.3,z);B(len*.5,1.4,.6,M2.adobe,x+len*.45,3.3,z);rect(x-len/2,x+len/2,z-.3,z+.3,true)},
+      panel:(x,z)=>{for(let i=-1;i<=1;i++){const p=new THREE.Mesh(new THREE.BoxGeometry(3.4,.1,2.2),M2.panel);p.position.set(X(x+i*3.6),1.5,Y(z));p.rotation.x=-.55;p.castShadow=true;scene.add(p);B(.2,1.4,.2,M2.metal,x+i*3.6,.7,z+.5,1);blk(x+i*3.6,z+.5,.3)}},
+      dish:(x,z)=>{B(1.8,.7,1.8,M2.white,x,.35,z);const c=new THREE.Mesh(GE.cone(2.4,1.2,20),M2.white);c.position.set(X(x),2.2,Y(z));c.rotation.x=PI*.78;c.castShadow=true;scene.add(c);B(.2,1.6,.2,M2.white,x,1.4,z,1);blk(x,z,1.2)},
+      antenna:(x,z)=>{const c=new THREE.Mesh(GE.cyl(.14,.3,13,8),M2.white);c.position.set(X(x),6.5,Y(z));c.castShadow=true;scene.add(c);const l=new THREE.Mesh(GE.sph(.3),M2.glow);l.position.set(X(x),13.2,Y(z));scene.add(l);blk(x,z,.4)},
+      crater:(x,z,r)=>{const c=new THREE.Mesh(new THREE.RingGeometry(r*.55,r,28),mat({color:0x3d3d42,roughness:1}));c.rotation.x=-PI/2;c.position.set(X(x),.045,Y(z));c.receiveShadow=true;scene.add(c);const c2=new THREE.Mesh(new THREE.CircleGeometry(r*.55,24),mat({color:0x57575d,roughness:1}));c2.rotation.x=-PI/2;c2.position.set(X(x),.04,Y(z));scene.add(c2)}};
+    // dispersión: n objetos de un tipo dentro de la zona k, evitando coberturas, puertas y el resto
+    const band=k=>[zs[k],zs[k+1]];
+    const put=(k,kind,n,args,m)=>{const[zt,zb]=band(k);for(let t=0,c=0;c<n&&t<n*30;t++){const x=-hw+2.5+R()*(w-5),z=zb+2.5+R()*(zt-zb-5);if(kept(x,z)||hit(x,z,m||2.4))continue;c++;const s=args&&args.s?args.s[0]+R()*(args.s[1]-args.s[0]):1;
+      if(kind==='cabin')SP.cabin(x,z,args.a,args.b,args.wm,args.rm,args.ar);else if(kind==='sandbags')SP.sandbags(x,z,args.len||5);else if(kind==='ruin')SP.ruin(x,z,args.len||6);else if(kind==='crater')SP.crater(x,z,args.r[0]+R()*(args.r[1]-args.r[0]));else SP[kind](x,z,s)}};
+    o.build({SP,put,rect,blk,B,hit,kz,X,Y,R,hw,hd,zs,band,M2,th,add,air,door});
+    // objetos instanciados
+    const dm=new THREE.Object3D();for(const k in ins){const list=ins[k];for(const p of PARTS[k]){const im=new THREE.InstancedMesh(p[0],p[1],list.length);
+      list.forEach((q,i)=>{const s=q[2],ry=q[3],ox=p[2]*s,oz=p[4]*s,c=Math.cos(ry),sn=Math.sin(ry);dm.position.set(q[0]+ox*c+oz*sn,p[3]*s+.02,q[1]-ox*sn+oz*c);dm.rotation.set(0,ry,0);dm.scale.set(q[4],s,q[4]);dm.updateMatrix();im.setMatrixAt(i,dm.matrix)});
+      im.castShadow=k!=='dune';im.receiveShadow=true;im.frustumCulled=false;scene.add(im)}}
+    // enemigos: grupos por zona con la fase («sec») que corresponde a cada etapa
+    const foes=[],fok=(x,z)=>!hit(x,z,.9)&&!foes.some(f=>Math.hypot(f[0]-x,f[1]-z)<2.6);
+    const fg=(k,sec,n,hv,hold)=>{const[zt,zb]=band(k);for(let t=0,c=0;c<n&&t<n*60;t++){const x=-hw+3+R()*(w-6),z=zb+3+R()*(zt-zb-6);if(!fok(x,z)||Math.hypot(x-o.spawn[0],z-o.spawn[1])<14)continue;foes.push([x,z,sec,R()<hold?1:0,c<hv?1:0]);c++}};
+    const bf=(x,z,sec,hv,hold,boss)=>{foes.push([x,z,sec,hold,hv?1:0,boss?1:0])};
+    o.foes({fg,bf,foes,hit,band});
+    const cc=cov.length;
+    return OMAPS[id]=STMAPS[id]={id,cx,Z,w,d,cov,doors,rects:[[cx-hw,cx+hw,Z-hd,Z+hd]],b:[cx-hw+.4,cx+hw-.4,Z-hd+.4,Z+hd-.4],spawn:o.spawn,foes,env:th==='moon'?'space':th,vac:space,grav:space,air,suit:null,nCov:cc}};
+  // ---- bosque: campamento → río → cresta → aserradero → bosque profundo → pabellón de caza ----
+  omap('bosque',-1200,-100,76,190,{th:'forest',seed:11,spawn:[0,88],
+    lines:[{z:64,g:[-8,0],st:'wood'},{z:36,g:[-2,6],st:'water'},{z:8,g:[8,16],st:'cliff'},{z:-20,g:[-14,-6],st:'cliff',blind:1},{z:-52,g:[-3,5],st:'cliff'}],
+    build:P=>{const{put,SP,M2}=P,cab={a:7,b:5.5,wm:M2.wood,rm:M2.plank};
+      put(0,'tent',4,null,3.4);put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'pine',22,{s:[.9,1.4]});put(0,'oak',8,{s:[.9,1.3]});put(0,'rock',5,{s:[.8,1.4]});put(0,'barrels',2,null,2);
+      put(1,'cabin',1,cab,4.5);put(1,'pine',30,{s:[.9,1.5]});put(1,'oak',14,{s:[.9,1.3]});put(1,'rock',9,{s:[.8,1.5]});put(1,'crates',2,null,2);
+      put(2,'tower',2,null,3);put(2,'sandbags',4,{len:6},2.2);put(2,'pine',38,{s:[.9,1.5]});put(2,'rock',14,{s:[.9,1.8]});put(2,'oak',6,{s:[.9,1.2]});
+      put(3,'cabin',2,{a:9,b:6,wm:M2.plank,rm:M2.wood},5);put(3,'truck',2,null,3.4);put(3,'crates',5,null,2);put(3,'pine',24,{s:[.9,1.4]});put(3,'rock',10,{s:[.8,1.5]});put(3,'barrels',3,null,2);
+      put(4,'tower',1,null,3);put(4,'sandbags',6,{len:5},2.2);put(4,'pine',34,{s:[1,1.6]});put(4,'rock',16,{s:[1,2]});put(4,'oak',8,{s:[.9,1.3]});
+      SP.cabin(0,-82,24,14,M2.plank,M2.wood);put(5,'pine',22,{s:[1,1.6]},3.2);put(5,'rock',8,{s:[.9,1.5]});put(5,'sandbags',4,{len:5},2.2)},
+    foes:({fg,bf})=>{fg(0,0,6,0,.5);fg(1,1,10,1,.5);fg(2,2,11,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,7,2,.3);bf(0,-86,6,1,1,1);bf(-5,-80,6,0,1);bf(5,-80,6,0,1);bf(-9,-79,6,1,1);bf(9,-79,6,1,1)}});
+  // ---- nieve: puesto avanzado → cresta helada → campo de camiones → búnker → torreta → fortín ----
+  omap('nieve',-1600,-100,80,190,{th:'snow',seed:23,wh:9,spawn:[0,88],
+    lines:[{z:64,g:[-4,4],st:'ice'},{z:34,g:[-12,-4],st:'cliff'},{z:4,g:[6,14],st:'ice'},{z:-26,g:[-4,4],st:'cliff',blind:1},{z:-56,g:[-8,0],st:'ice'}],
+    build:P=>{const{put,SP,M2}=P;
+      put(0,'dome',4,null,4.4);put(0,'tent',3,null,3.4);put(0,'crates',3,null,2);put(0,'spine',24,{s:[.9,1.4]});put(0,'rock',6,{s:[.8,1.4]});put(0,'barrels',2,null,2);
+      put(1,'spine',34,{s:[.9,1.6]});put(1,'rock',16,{s:[.9,1.8]});put(1,'sandbags',4,{len:5},2.2);put(1,'dome',2,null,4.4);
+      put(2,'truck',5,null,3.6);put(2,'crates',5,null,2);put(2,'sandbags',5,{len:6},2.2);put(2,'spine',20,{s:[.9,1.4]});put(2,'rock',10,{s:[.8,1.4]});put(2,'barrels',3,null,2);
+      put(3,'cabin',3,{a:10,b:7,wm:M2.conc,rm:M2.snowR},5.5);put(3,'tower',2,null,3);put(3,'spine',18,{s:[.9,1.4]});put(3,'rock',10,{s:[.9,1.6]});put(3,'crates',4,null,2);
+      put(4,'sandbags',7,{len:6},2.2);put(4,'spine',28,{s:[1,1.7]});put(4,'rock',18,{s:[1,2.1]});put(4,'truck',2,null,3.6);put(4,'tower',1,null,3);
+      SP.cabin(0,-84,26,15,M2.conc,M2.snowR);put(5,'spine',14,{s:[1,1.6]},3.2);put(5,'rock',9,{s:[.9,1.6]});put(5,'sandbags',4,{len:5},2.2)},
+    foes:({fg,bf})=>{fg(0,0,7,0,.5);fg(1,1,10,1,.5);fg(2,2,12,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,6,2,.3);bf(0,-88,6,1,1,1);bf(-6,-80,6,0,1);bf(6,-80,6,0,1);bf(-10,-79,6,1,1);bf(10,-79,6,1,1)}});
+  // ---- desierto: oasis → aldea → cantera de ruinas → convoy → fuerte → palacio ----
+  omap('desierto',-2000,-100,84,190,{th:'desert',seed:37,wh:8,spawn:[0,88],
+    lines:[{z:64,g:[4,12],st:'cliff'},{z:34,g:[-10,-2],st:'wood'},{z:4,g:[-4,4],st:'cliff'},{z:-26,g:[8,16],st:'cliff',blind:1},{z:-56,g:[-4,4],st:'cliff'}],
+    build:P=>{const{put,SP,M2}=P;
+      put(0,'tent',4,null,3.4);put(0,'cactus',14,{s:[.9,1.4]});put(0,'rock',6,{s:[.8,1.4]});put(0,'dune',4,null,4);put(0,'crates',3,null,2);put(0,'barrels',2,null,2);
+      put(1,'cabin',4,{a:8,b:6,wm:M2.adobe,rm:M2.adobe},5);put(1,'cactus',12,{s:[.9,1.4]});put(1,'rock',8,{s:[.8,1.5]});put(1,'dune',3,null,4);put(1,'crates',3,null,2);
+      put(2,'ruin',8,{len:7},4);put(2,'column',10,null,2.6);put(2,'cactus',10,{s:[.9,1.4]});put(2,'rock',14,{s:[1,2]});put(2,'dune',3,null,4);
+      put(3,'truck',5,null,3.6);put(3,'barrels',4,null,2);put(3,'sandbags',5,{len:6},2.2);put(3,'crates',4,null,2);put(3,'cactus',9,{s:[.9,1.3]});put(3,'rock',8,{s:[.9,1.5]});
+      put(4,'tower',2,null,3);put(4,'sandbags',6,{len:6},2.2);put(4,'cabin',2,{a:9,b:6,wm:M2.adobe,rm:M2.adobe},5);put(4,'rock',14,{s:[1,2]});put(4,'cactus',8,{s:[.9,1.3]});
+      SP.cabin(0,-84,28,16,M2.adobe,M2.adobe);for(const a of[-1,1])for(let i=0;i<3;i++)SP.column(a*16,-72+i*-.1+(i-1)*5);put(5,'cactus',6,{s:[.9,1.3]});put(5,'rock',7,{s:[.9,1.5]});put(5,'sandbags',3,{len:5},2.2)},
+    foes:({fg,bf})=>{fg(0,0,7,0,.5);fg(1,1,10,1,.5);fg(2,2,12,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,6,2,.3);bf(0,-88,6,1,1,1);bf(-6,-80,6,0,1);bf(6,-80,6,0,1);bf(-10,-79,6,1,1);bf(10,-79,6,1,1)}});
+  // ---- luna: transbordador → campo de aterrizaje → granja solar → cráter minero → antenas → módulo de mando ----
+  omap('luna',-2400,-100,80,190,{th:'moon',seed:41,wh:10,spawn:[0,88],shuttle:[0,86],
+    lines:[{z:78,g:[-1,1],st:'bulk'},{z:36,g:[-6,2],st:'bulk'},{z:6,g:[8,16],st:'cliff'},{z:-24,g:[-14,-6],st:'bulk',blind:1},{z:-54,g:[-3,5],st:'cliff'}],
+    build:P=>{const{put,SP,M2}=P;
+      P.B(.6,2.2,1.6,M2.red,5.2,1.1,81);P.B(.1,.4,1.2,M2.glow,4.88,1.7,81);put(0,'rock',7,{s:[.8,1.6]});put(0,'crater',5,{r:[3,6]},0);put(0,'crates',3,null,2);put(0,'dish',1,null,3);
+      put(1,'rock',16,{s:[.9,1.8]});put(1,'crater',6,{r:[3,7]},0);put(1,'crates',5,null,2);put(1,'antenna',2,null,3);put(1,'sandbags',3,{len:5},2.2);
+      put(2,'panel',5,null,6);put(2,'rock',12,{s:[.9,1.6]});put(2,'crater',4,{r:[3,6]},0);put(2,'crates',4,null,2);put(2,'dish',2,null,3);
+      put(3,'rock',20,{s:[1,2.2]});put(3,'crater',8,{r:[4,9]},0);put(3,'truck',3,null,3.6);put(3,'crates',5,null,2);put(3,'barrels',4,null,2);
+      put(4,'antenna',4,null,3);put(4,'dish',3,null,3);put(4,'rock',16,{s:[1,2]});put(4,'sandbags',5,{len:6},2.2);put(4,'cabin',2,{a:9,b:6,wm:M2.white,rm:M2.metal,ar:1},5);
+      SP.cabin(0,-84,28,15,M2.white,M2.metal,1);put(5,'rock',10,{s:[.9,1.6]});put(5,'antenna',2,null,3);put(5,'crater',3,{r:[3,5]},0)},
+    foes:({fg,bf})=>{fg(1,1,11,1,.5);fg(2,2,12,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,7,2,.3);bf(0,-88,6,1,1,1);bf(-6,-80,6,0,1);bf(6,-80,6,0,1);bf(-10,-79,6,1,1);bf(10,-79,6,1,1)}});
 }
 // dianas
 const tMats=TARGETS.map((t,j)=>mat({roughness:j<3?.95:.5,metalness:j<3?0:.55,map:ctex(256,(g,q)=>{const c=q/2,C=(r,f,w)=>{g.beginPath();g.arc(c,c,r,0,7);if(f){g.fillStyle=f;g.fill()}if(w){g.lineWidth=w;g.stroke()}};
@@ -1414,7 +1585,7 @@ function damageBot(b,d,head,mul){
   b.hp-=eff;b.react=Math.min(b.react,.15);b.hold=false;if(head)S.stat.bulls++;if(FX){sfx.hit(0);burst(b.x,b.y+(head?1.7:1.2),b.z,head?7:4,head?0xb04030:0x6f5f40,3)}
   if(b.hp<=0&&area===4){if(FX){sfx.tick();hitT=.22;$('#hitm').className='kill'}im.bang=(mul||1)>1;killBot(b,PL,head);return 2}
   if(b.hp<=0){const m=Math.max(1,Math.round(b.reward*moneyMult())),rk=rank();earn(m);rateAcc+=m;S.total++;S.stat.bots++;if(b.type)S.stat.heavies++;
-    if(FX){sfx.tick();pop((head?'tiro a la cabeza  ':'')+'+$'+fmt(m));hitT=.22;$('#hitm').className='kill'}killBot(b,PL,head);rankUp(rk)}
+    if(FX){sfx.tick();if(area<2||head)pop((head?'tiro a la cabeza  ':'')+(area<2?'+$'+fmt(m):''));hitT=.22;$('#hitm').className='kill'}killBot(b,PL,head);rankUp(rk)}
   return 2}
 function splashBots(x,y,z,r,dmg,direct,head){let any=false;for(const b of bots.slice()){if(b.st!==1||b.team===0)continue;const dx=b.x-x,dy=b.y+1-y,dz=b.z-z;if(b===direct||dx*dx+dy*dy+dz*dz<r*r){if(damageBot(b,dmg,b===direct&&head))any=true}}
   if(FX){boomM.position.set(x,Math.max(.3,y),z);boomM.userData.t=.25;boomM.userData.r=r;boomM.visible=true;burst(x,Math.max(.3,y),z,16,0x6b5a40,r*2.2);sfx.boom()}return any}
@@ -1433,7 +1604,7 @@ const MIS_E=[[-20,0,0,1],[18,2,0,0],[-10,-8,0,0],[12,-9,0,1],[0,-4,0,0],[-25,-10
  [-9,-20.8,1,1],[6,-21,1,0],[-12.4,-25.6,1,1],[9,-30.6,1,1],[0,-30,1,0],[-5,-23,1,0],[12.3,-21.4,1,1],[-11,-32,1,0],[4,-19.6,1,1],[10,-17,1,0],
  [0,-48,2,0],[-11,-48,2,0],[11,-56.5,2,1],[5,-49,2,0],
  [-12,-55.5,3,1],[-5,-60,3,1],[-10,-62.8,3,1],[-12.6,-62.6,3,1,1]];
-const mis={on:false,stage:0,breachT:0,endT:0,won:false};
+const mis={on:false,stage:0,breachT:0,endT:0,won:false,suit:true};const grv=()=>area===3&&!!stMap&&!!stMap.grav,inAir=(x,z)=>!!stMap&&stMap.air.some(inR(x,z));
 const misLeft=sec=>{let n=0;for(const b of bots)if(b.team===1&&b.st===1&&b.sec===sec)n++;return n};
 function misStart(){if(stIdx>0){misStart2();return}Object.assign(AREAS[3],A3);stMap=null;mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;misC1.off=false;misC2.off=false;px=MX;pz=19;yaw=0;
   for(const e of MIS_E){const ps=e[4]?PERS[2]:imPers();mkBot({type:e[4]||0,team:1,x:MX+e[0],z:e[1],sec:e[2],hold:e[3],home:1,name:e[4]?'Presidente Valcárcel':e[2]===0?'Vigilante':'Guardia',pers:ps,wi:enemyWeapon(e[2],ps,e[4],e[4])})}
@@ -1491,10 +1662,74 @@ const STORY=[
    {type:'clear',sec:2,door:null,obj:'Limpia la armería',done:['Armería limpia','Hay una puerta blindada: coloca la carga']},
    {type:'breach',st:[0,-19.8,0,-21],door:2,obj:'Coloca la carga en la puerta blindada',done:['Puerta volada','El gran salón está lleno de pesados']},
    {type:'clear',sec:4,door:3,obj:'Despeja el gran salón',done:['Gran salón despejado','La sala del trono está al fondo']},
-   {type:'clear',sec:5,win:true,obj:'Acaba con el Generalísimo y su guardia pretoriana'}]}];
+   {type:'clear',sec:5,win:true,obj:'Acaba con el Generalísimo y su guardia pretoriana'}]},
+ {t:'Misión 4 · El bosque',weapon:13,cine:3,d:'Objetivo: Mariscal Quiroga · 7 etapas',map:'bosque',boss:'Mariscal Brandán Quiroga',win:'El Mariscal Quiroga ha caído',start:'Campamento, río, cresta, aserradero y bosque profundo. Al fondo, el pabellón de caza.',
+  intro:[[null,'Sierra del Pinar · 06:10 · bruma'],
+   ['Coronel Barragán','El Mariscal Brandán Quiroga se ha declarado rey del bosque y cobra peaje a los senderistas. Y a las ardillas.'],
+   ['Doctora Iturbe','Su guardia controla todo el camino: campamento, río, cresta y aserradero. Su pabellón de caza está al fondo.'],
+   ['Sombra','¿Cobra peaje a las ardillas?'],
+   ['Coronel Barragán','En bellotas. Hay que acabar con él.'],
+   ['Doctora Iturbe','El aserradero tiene una barrera reforzada. Llévate la carga.'],
+   ['Sombra','Entendido. Voy a por el rey de las bellotas.'],
+   [null,'Objetivo: el Mariscal Brandán Quiroga, en su pabellón de caza. Siete etapas en terreno abierto.']],
+  stages:[{type:'clear',sec:0,door:0,obj:'Despeja el campamento',done:['Campamento despejado','Se abre la empalizada hacia el río']},
+   {type:'clear',sec:1,door:1,obj:'Cruza el río y limpia la orilla',done:['Orilla despejada','Cruzas el puente hacia la cresta']},
+   {type:'clear',sec:2,door:2,obj:'Toma la cresta',done:['Cresta tomada','El aserradero está más adelante']},
+   {type:'clear',sec:3,door:null,obj:'Limpia el aserradero',done:['Aserradero limpio','Una barrera reforzada corta el camino: coloca la carga']},
+   {type:'breach',st:[-10,-18.6,-10,-20],door:3,obj:'Vuela la barrera reforzada',done:['Barrera volada','Queda el bosque profundo y el pabellón de caza']},
+   {type:'clear',sec:5,door:4,obj:'Atraviesa el bosque profundo',done:['Bosque despejado','El pabellón de caza está al fondo']},
+   {type:'clear',sec:6,win:true,obj:'Acaba con el Mariscal y su guardia'}]},
+ {t:'Misión 5 · La nieve',weapon:22,cine:4,d:'Objetivo: Comisario Vostok · 7 etapas',map:'nieve',boss:'Comisario Yuri Vostok',win:'El Comisario Vostok ha caído',start:'Puesto avanzado, cresta helada, campo de camiones y búnker. El fortín está al fondo.',
+  intro:[[null,'Paso de Vostok · 04:50 · -28 grados'],
+   ['Coronel Barragán','El Comisario Yuri Vostok gobierna un valle helado y ha prohibido el deshielo por decreto. Dice que es subversivo.'],
+   ['Doctora Iturbe','Hay un puesto avanzado, una cresta de hielo, un campo de camiones averiados y un búnker. Su fortín está al final.'],
+   ['Sombra','¿Y la nieve? ¿Se puede disparar bien?'],
+   ['Doctora Iturbe','Verás lejos. Te han dado un rifle de precisión. Pero el viento también.'],
+   ['Coronel Barragán','Un búnker con puerta reforzada. Coloca la carga y sigue.'],
+   ['Sombra','Voy a ponerle fin a su invierno.'],
+   [null,'Objetivo: el Comisario Yuri Vostok, en su fortín de hormigón. Siete etapas sobre la nieve.']],
+  stages:[{type:'clear',sec:0,door:0,obj:'Toma el puesto avanzado',done:['Puesto tomado','Se abre el paso de la cresta helada']},
+   {type:'clear',sec:1,door:1,obj:'Sube a la cresta helada',done:['Cresta tomada','Abajo está el campo de camiones']},
+   {type:'clear',sec:2,door:2,obj:'Despeja el campo de camiones',done:['Campo despejado','Se abre el paso al búnker']},
+   {type:'clear',sec:3,door:null,obj:'Limpia el búnker',done:['Búnker limpio','La esclusa blindada necesita una carga']},
+   {type:'breach',st:[0,-24.6,0,-26],door:3,obj:'Vuela la esclusa blindada',done:['Esclusa volada','Quedan las baterías antiaéreas y el fortín']},
+   {type:'clear',sec:5,door:4,obj:'Toma las baterías antiaéreas',done:['Baterías tomadas','El fortín está al fondo']},
+   {type:'clear',sec:6,win:true,obj:'Acaba con el Comisario y su guardia'}]},
+ {t:'Misión 6 · El desierto',weapon:10,cine:5,d:'Objetivo: Caudillo Zahir · 7 etapas',map:'desierto',boss:'Caudillo Zahir',win:'El Caudillo Zahir ha caído',start:'Oasis, aldea, ruinas, convoy y fuerte. El palacio del Caudillo está al fondo.',
+  intro:[[null,'Gran Erg · 14:20 · 47 grados'],
+   ['Coronel Barragán','El Caudillo Zahir se proclamó Sultán de las Dunas y vende agua embotellada a precio de oro. Del oasis, que es de todos.'],
+   ['Doctora Iturbe','Oasis, aldea, ruinas, convoy y fuerte: cinco líneas y un palacio. Con calor, y sin sombra.'],
+   ['Sombra','¿Alguna recomendación?'],
+   ['Doctora Iturbe','Beber agua. La tuya, no la de él.'],
+   ['Coronel Barragán','El fuerte está tras una puerta reforzada. Llévate la carga.'],
+   ['Sombra','Voy a por el Sultán. Que ponga la sombrilla.'],
+   [null,'Objetivo: el Caudillo Zahir, en su palacio. Siete etapas bajo el sol.']],
+  stages:[{type:'clear',sec:0,door:0,obj:'Despeja el oasis',done:['Oasis despejado','Se abre la puerta de la aldea']},
+   {type:'clear',sec:1,door:1,obj:'Limpia la aldea',done:['Aldea limpia','Hay ruinas al norte']},
+   {type:'clear',sec:2,door:2,obj:'Despeja las ruinas',done:['Ruinas despejadas','El convoy bloquea el camino']},
+   {type:'clear',sec:3,door:null,obj:'Destruye el convoy',done:['Convoy destruido','El fuerte tiene una puerta reforzada: coloca la carga']},
+   {type:'breach',st:[12,-24.6,12,-26],door:3,obj:'Vuela la puerta del fuerte',done:['Puerta volada','Dentro del fuerte y, después, el palacio']},
+   {type:'clear',sec:5,door:4,obj:'Toma el fuerte',done:['Fuerte tomado','El palacio está al fondo']},
+   {type:'clear',sec:6,win:true,obj:'Acaba con el Caudillo y su guardia'}]},
+ {t:'Misión 7 · La luna',weapon:15,cine:6,d:'Objetivo: Directora Kessler · 7 etapas',map:'luna',boss:'Directora Nova Kessler',win:'La Directora Kessler ha caído',start:'Sal del transbordador con el traje puesto. Aquí fuera no hay aire.',
+  intro:[[null,'Base Helios-7 · cara visible de la Luna'],
+   ['Coronel Barragán','La Directora Nova Kessler se ha quedado con la base lunar y cobra el oxígeno por bocanadas.'],
+   ['Doctora Iturbe','Tu transbordador aterriza al borde de la base. Fuera no hay aire: ponte el traje antes de abrir la escotilla o perderás vida.'],
+   ['Sombra','¿Y si se me olvida?'],
+   ['Doctora Iturbe','Se te olvida una vez.'],
+   ['Coronel Barragán','Hay una esclusa blindada en el cráter minero. Coloca la carga y ve a por ella al módulo de mando.'],
+   ['Sombra','Entendido. Que no se escape ni el eco.'],
+   [null,'Objetivo: la Directora Nova Kessler, en el módulo de mando. Siete etapas sin atmósfera.']],
+  stages:[{type:'suit',door:0,obj:'Ponte el traje espacial y abre la escotilla',done:['Traje puesto','Escotilla abierta: fuera no hay aire']},
+   {type:'clear',sec:1,door:1,obj:'Despeja el campo de aterrizaje',done:['Campo despejado','Se abre el paso a la granja solar']},
+   {type:'clear',sec:2,door:2,obj:'Toma la granja solar',done:['Granja tomada','Se abre el paso al cráter minero']},
+   {type:'clear',sec:3,door:null,obj:'Limpia el cráter minero',done:['Cráter limpio','La esclusa blindada necesita una carga']},
+   {type:'breach',st:[-10,-22.6,-10,-24],door:3,obj:'Vuela la esclusa blindada',done:['Esclusa volada','Quedan el campo de antenas y el módulo de mando']},
+   {type:'clear',sec:5,door:4,obj:'Toma el campo de antenas',done:['Antenas tomadas','El módulo de mando está al fondo']},
+   {type:'clear',sec:6,win:true,obj:'Acaba con la Directora y su guardia'}]}];
 // historia: el daño a la cabeza es una fracción de la vida del enemigo según el arma (pesados y jefes resisten más), como en el incremental
 const stHf=b=>{const w=W(),f=w.i===5?.6:w.type==='shotgun'?.125:w.ck==='sn'?1:({pis:.34,smg:.34,ar:.55,lmg:.55})[w.ck]||.4;return f*(b.type?.6:1)};
-let stIdx=0,stMap=null,stProg={done:[0,0,0]};
+let stIdx=0,stMap=null,stProg={done:[0,0,0,0,0,0,0]};
 try{const d=JSON.parse(localStorage.getItem('operacionAceroHistoria1'));if(d&&d.done)stProg=d}catch(e){}
 const stSave=()=>{try{localStorage.setItem('operacionAceroHistoria1',JSON.stringify(stProg))}catch(e){}};
 const BR2=STN.find(q=>q.id==='breach2');
@@ -1502,7 +1737,7 @@ const misStg=()=>stIdx>0&&stMap?STORY[stIdx].stages[mis.stage]:null;
 // la estación de la carga se coloca en la puerta de la etapa actual
 function misBr(){const s=misStg();if(s&&s.type==='breach'){const M=stMap;Object.assign(BR2,{x:M.cx+s.st[0],z:M.Z+s.st[1],lx:M.cx+s.st[2],lz:M.Z+s.st[3]})}}
 function misStart2(){const c=STORY[stIdx],M=STMAPS[c.map];stMap=M;Object.assign(AREAS[3],{rects:M.rects,cov:M.cov,b:M.b,spawns:[]});
-  mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;for(const d of M.doors){d.c.off=false;d.mesh.visible=true}
+  mis.on=true;mis.stage=0;mis.breachT=0;mis.endT=0;mis.won=false;mis.suit=!M.vac;if(M.vac){const SU=STN.find(q=>q.id==='suit'),a=M.cx+3.5,b=M.Z+82.5;Object.assign(SU,{x:a,z:b,lx:a+1.7,lz:b})}for(const d of M.doors){d.c.off=false;d.mesh.visible=true}
   px=M.cx+M.spawn[0];pz=M.Z+M.spawn[1];yaw=0;
   for(const e of M.foes){const ps=e[4]?PERS[e[5]?2:1]:imPers();mkBot({type:e[4]||0,team:1,x:M.cx+e[0],z:M.Z+e[1],sec:e[2],hold:e[3],home:1,name:e[5]?c.boss:e[4]?'Pesado':e[2]===0?'Vigilante':'Guardia',pers:ps,wi:enemyWeapon(e[2],ps,e[4],e[5])})}
   [['Vega',-2.4,.5],['Rojas',2.4,.5],['Mora',0,1.6]].forEach(a=>mkBot({team:0,x:px+a[1],z:pz+a[2],name:a[0],mat:BM.ally}));
@@ -1514,12 +1749,14 @@ function misAdvance(c,st){if(st.door!=null){const d=stMap.doors[st.door];d.c.off
 function misAllies(dt){for(const b of bots)if(b.team===0&&b.st===1){b.hp=Math.min(b.max,b.hp+b.max*.05*dt);const d=Math.hypot(b.x-px,b.z-pz);if(d>13||(Math.abs(b.y-pgy)>1.2&&d>5)){for(let k=0;k<10;k++){const a=rnd()*6.283,x=px+Math.cos(a)*2.4,z=pz+Math.sin(a)*2.4;if(botOk(x,z)&&Math.abs(groundY(x,z)-pgy)<.6){b.x=x;b.z=z;b.y=groundY(x,z);b.gx=x;b.gz=z;break}}}}}
 function misTick2(dt){const c=STORY[stIdx],st=c.stages[mis.stage];
   if(mis.endT>0){mis.endT-=dt;if(mis.endT<=0)travel(0);return}
-  if(st.type==='clear'&&!misLeft(st.sec))misAdvance(c,st);
+  if(stMap.vac&&!mis.suit&&!inAir(px,pz)){php-=7*dt;hurtT=Math.max(hurtT,.2);lastHit=0;tip('vac','Sin traje','Fuera del transbordador no hay aire: ponte el traje o vuelve dentro');if(php<=0)playerDown({name:'El vacío',id:0})}
+  if(st.type==='suit'){if(mis.suit)misAdvance(c,st)}
+  else if(st.type==='clear'&&!misLeft(st.sec))misAdvance(c,st);
   else if(st.type==='breach'&&mis.breachT>0){const q=Math.ceil(mis.breachT*2);mis.breachT-=dt;if(Math.ceil(mis.breachT*2)<q&&FX)tone(1800,1800,.05,'square',.08);
     if(mis.breachT<=0){const d=stMap.doors[st.door],dd=Math.hypot(px-d.x,pz-d.z);if(FX){sfx.boom();flashFx();boomM.position.set(d.x,1.6,d.z);boomM.userData.t=.25;boomM.userData.r=3;boomM.visible=true;burst(d.x,1.6,d.z,30,0x8a6a4a,9)}slowMo(2.4);if(dd<3.2){php-=35;hurtT=.4;lastHit=0;if(php<=0)php=1}misAdvance(c,st)}}
   misAllies(dt)}
-function misObj2(){if(mis.won)return 'Misión cumplida';const st=STORY[stIdx].stages[mis.stage];return st.type==='breach'?(mis.breachT>0?'Carga colocada · '+Math.ceil(mis.breachT):st.obj):st.obj+' · quedan '+misLeft(st.sec)}
-function misHud2(){let al=0;for(const b of bots)if(b.team===0&&b.st===1)al++;return `${STORY[stIdx].t.split(' · ')[1]}<br>Etapa <b>${mis.stage+1} / ${STORY[stIdx].stages.length}</b><br>Equipo en pie: <b>${al} / 3</b>`}
+function misObj2(){if(mis.won)return 'Misión cumplida';const st=STORY[stIdx].stages[mis.stage];return st.type==='breach'?(mis.breachT>0?'Carga colocada · '+Math.ceil(mis.breachT):st.obj):st.type==='suit'?st.obj:st.obj+' · quedan '+misLeft(st.sec)}
+function misHud2(){let al=0;for(const b of bots)if(b.team===0&&b.st===1)al++;return `${STORY[stIdx].t.split(' · ')[1]}<br>Etapa <b>${mis.stage+1} / ${STORY[stIdx].stages.length}</b><br>Equipo en pie: <b>${al} / 3</b>`+(stMap&&stMap.vac?`<br>Traje: <b>${mis.suit?'puesto':'sin poner'}</b>`:'')}
 // ---------- selector de misiones ----------
 function storyRender(){const P=$('#pn-story');P.querySelectorAll('button[data-a^="stm:"],button[data-a="stlock"]').forEach(e=>e.remove());const back=P.querySelector('button[data-a="back"]');
   STORY.forEach((c,i)=>{const lock=i>0&&!stProg.done[i-1],b=document.createElement('button');b.dataset.a=lock?'stlock':'stm:'+i;b.innerHTML=`${c.t}${stProg.done[i]?' ✓':''}<small>${lock?'Completa la misión anterior para desbloquearla':c.d}</small>`;if(lock)b.style.opacity='.5';P.insertBefore(b,back)});
@@ -1553,7 +1790,11 @@ function pickDrop(d){S.own[d.wi]=1;equip(d.wi);gst='ready';S.ammo=magSize();sfx.
 const CINE_ACT=[
  [['hazmat',0,-.12,CINE_Z-4.9,1],['enemy',-2.8,0,CINE_Z-4.6,1],['enemy',2.8,0,CINE_Z-4.6,1],['enemy',-4.6,0,CINE_Z-2.4,1],['enemy',4.6,0,CINE_Z-2.4,1]],
  [['hazmat',0,-.12,CINE_Z-5.4,1],['enemy',-3.4,0,CINE_Z-5.8,1],['enemy',3.4,0,CINE_Z-5.8,1],['enemy',-5.4,0,CINE_Z-4.2,1],['enemy',5.4,0,CINE_Z-4.2,1],['enemy',-7.4,0,CINE_Z-5.8,1],['enemy',7.4,0,CINE_Z-5.8,1]],
- [['hazmat',0,.5,CINE_Z-6.1,1],['hazmat',-2.6,.6,CINE_Z-5.6,1.2],['hazmat',2.6,.6,CINE_Z-5.6,1.2],['enemy',-3.7,.6,CINE_Z-4.4,1],['enemy',3.7,.6,CINE_Z-4.4,1]]];
+ [['hazmat',0,.5,CINE_Z-6.1,1],['hazmat',-2.6,.6,CINE_Z-5.6,1.2],['hazmat',2.6,.6,CINE_Z-5.6,1.2],['enemy',-3.7,.6,CINE_Z-4.4,1],['enemy',3.7,.6,CINE_Z-4.4,1]],
+ [['hazmat',0,-.12,CINE_Z-6.4,1],['enemy',-3.4,0,CINE_Z-6.4,1],['enemy',3.4,0,CINE_Z-6.4,1],['enemy',-6,0,CINE_Z-3.6,1],['enemy',6,0,CINE_Z-3.6,1]],
+ [['hazmat',0,-.12,CINE_Z-6.4,1],['enemy',-3.4,0,CINE_Z-6.6,1],['enemy',3.4,0,CINE_Z-6.6,1],['enemy',-6.4,0,CINE_Z-4.2,1],['enemy',6.4,0,CINE_Z-4.2,1]],
+ [['hazmat',0,-.4,CINE_Z-6.6,1],['enemy',-3.4,0,CINE_Z-6.8,1],['enemy',3.4,0,CINE_Z-6.8,1],['enemy',-5.6,0,CINE_Z-4.4,1],['enemy',5.6,0,CINE_Z-4.4,1]],
+ [['hazmat',0,-.12,CINE_Z-6.1,1],['enemy',-3.2,0,CINE_Z-6.4,1],['enemy',3.2,0,CINE_Z-6.4,1],['enemy',-6.5,0,CINE_Z-4.5,1],['enemy',6.5,0,CINE_Z-4.5,1]]];
 // planos de cámara: [posición, objetivo] respecto al plató
 const CINE_SHOTS=[[[0,2.4,CINE_Z+3.2],[0,1.3,CINE_Z-4.8]],[[1.5,1.6,CINE_Z-.6],[0,1.25,CINE_Z-5.2]],[[-4.6,1.8,CINE_Z-1],[.8,1.3,CINE_Z-4.9]],[[3.9,1.15,CINE_Z-2.4],[-.4,1.5,CINE_Z-5.4]],[[0,1.2,CINE_Z+.8],[0,1.6,CINE_Z-5.2]]];
 const cine={on:false,lines:[],i:0,t:0,txt:'',set:0,who:{},actors:[],shot:0,k:1,from:null,to:null,cur:null,col:['#b9cf5a','#e0a85a','#7fb6e0','#d98a8a','#b99be0']};
@@ -2005,7 +2246,7 @@ function nearStation(){let best=null,bd=.45;const fx=-Math.sin(yaw),fz=-Math.cos
 function interact(){if(state!=='play'||deadT>0)return;const s=nearStation();if(!s){const d=nearDrop();if(d)pickDrop(d);return}
   const shut=()=>{sfx.err();note('Puerta cerrada','Se abre al alcanzar el nivel 3 (Cabo). Vas por el nivel '+level())};
   if(s.id==='toHouse'){if(houseOpen())travel(1);else shut()}else if(s.id==='toFFA'){if(houseOpen())travel(2);else shut()}else if(s.id==='toStory'){if(houseOpen())travel(3);else shut()}
-  else if(s.id==='toRange')travel(0);else if(s.id==='plant')imPlant();else if(s.id==='door')imDoor();else if(s.id==='breach2'){mis.breachT=3;sfx.uiOk();note('Carga colocada','Tres segundos. Apártate de la puerta')}else if(s.id==='breach'){mis.breachT=3;sfx.uiOk();note('Carga colocada','Tres segundos. Apártate de la puerta')}else openMenu(s.id)}
+  else if(s.id==='toRange')travel(0);else if(s.id==='plant')imPlant();else if(s.id==='door')imDoor();else if(s.id==='suit'){mis.suit=true;sfx.uiOk();note('Traje puesto','Ya puedes salir: el vacío no te hará daño')}else if(s.id==='breach2'){mis.breachT=3;sfx.uiOk();note('Carga colocada','Tres segundos. Apártate de la puerta')}else if(s.id==='breach'){mis.breachT=3;sfx.uiOk();note('Carga colocada','Tres segundos. Apártate de la puerta')}else openMenu(s.id)}
 
 /* =============== BUCLE =============== */
 let stepAcc=0;
@@ -2019,7 +2260,7 @@ function update(dt){
     bob+=dt*9*Math.min(1,l);stepAcc+=dt*Math.min(1,l);if(stepAcc>.48){stepAcc=0;sfx.step()}}
   if(S.spT&&fw<=.5)kb.sprint=false;if(S.crT&&(kb.sprint||pad.sprint)&&fw>.5){kb.crouch=false;padCr=false}
   {const ws=state==='play'&&(kb.sprint||pad.sprint)&&fw>.5&&!ads&&crouch<.5&&!(kb.fire||pad.fire)&&gst==='ready';sprint+=((ws?1:0)-sprint)*Math.min(1,dt*8)}
-  {const wc=state==='play'&&(kb.crouch||pad.crouch)&&jy<=0;crouch+=((wc?1:0)-crouch)*Math.min(1,dt*12);if(jy>0){vy-=13*dt;jy+=vy*dt;if(jy<=0){jy=0;vy=0;sfx.step()}}}
+  {const wc=state==='play'&&(kb.crouch||pad.crouch)&&jy<=0;crouch+=((wc?1:0)-crouch)*Math.min(1,dt*12);if(jy>0){vy-=13*dt*(grv()?.45:1);jy+=vy*dt;if(jy<=0){jy=0;vy=0;sfx.step()}}}
   ads=state==='play'&&(kb.ads||pad.ads)&&inRange()&&gst!=='clean';
   if(gst==='reload'){gT+=dt;if(gT>=gDur){gst='ready';S.ammo=magSize();S.dirt=Math.max(0,S.dirt-L('hot')*.1);sfx.relIn()}}
   else if(gst==='clean'){const b=Math.floor(gT/.5);gT+=dt;if(Math.floor(gT/.5)>b&&gT<gDur)sfx.scrub();if(gT>=gDur){gst='ready';S.dirt=0;S.stat.cleans++;sfx.clear()}}
@@ -2052,6 +2293,8 @@ function render(dt){
   // dentro de la mansión no hay luz: casi negro sin visión nocturna
   {const inH=area===3&&pz<-14.3&&Math.abs(px-MX)<14.6;dark+=((inH?1:0)-dark)*Math.min(1,dt*3);const q=dark;hemiL.intensity=1-q*(nv?.2:.975);sun.intensity=2.3*(1-q);for(const f of fillL)f.intensity=1.1*(1-q)+(nv?.6*q:0);
     renderer.toneMappingExposure=1.05+(nv?.45:0);{const ge=dark>.5?.05:1;if(ge!==gunEnv){gunEnv=ge;gun.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial)o.material.envMapIntensity=ge})}}scene.fog.color.setRGB(.576*(1-q*.95),.647*(1-q*.95),.678*(1-q*.95))}
+  {const E=state!=='cine'&&area===3&&stMap&&OEN[stMap.env];if(E){envOn=1;scene.fog.color.setHex(E.fog);scene.fog.near=E.fn;scene.fog.far=E.ff;skyM.visible=!E.stars;skyM.material.color.setHex(E.stars?0:E.sky);starsM.visible=!!E.stars;starsM.position.copy(skyM.position);hemiL.color.setHex(E.hc);hemiL.groundColor.setHex(E.hg);hemiL.intensity*=E.hi;sun.color.setHex(E.sc);sun.intensity*=E.si/2.3}
+    else if(envOn){envOn=0;scene.fog.near=60;scene.fog.far=250;skyM.visible=true;skyM.material.color.setHex(0xffffff);starsM.visible=false;hemiL.color.setHex(0xcfdcec);hemiL.groundColor.setHex(0x6b6048);sun.color.setHex(0xfff0d8)}}
   const low=!inRange()||state==='menu'||sprint>.5;
   const U=gun.userData,sc=ads&&zm<20&&fov<zm+14;if(sc!==scopeOn){scopeOn=sc;$('#scope').style.display=sc?'block':'none'}gun.visible=!sc&&!lobby&&!dc&&state!=='cine';
   let gx=ads?0:.16,gy=ads?-U.sy:-.16,gz=(ads?U.az:U.hz)+gunZ,rx=gunZ*1.2,ry=0,rz=0;
@@ -2084,7 +2327,7 @@ function hud(){
   $('#money').textContent='$'+fmt(S.money);$('#chapas').textContent=S.chapas+' chapas'+(pasRate()>0?` · +$${fmt(pasRate())}/s`:'');{const eco=area>=2?'none':'',prog=area>=2?'none':'';$('#money').style.display=eco;$('#chapas').style.display=eco;$('#rankrow').style.display=prog;$('#xp').style.display=prog}
   $('#rankrow').textContent=`Nivel ${rk+1} · ${RANKS[rk]}`+(S.medals?` · ${S.medals} medallas`:'');$('#xpf').style.width=(rk>=RANKS.length-1?100:Math.min(100,(S.total-lo)/(hi-lo)*100))+'%';
   {const mh=maxHp(),f=Math.max(0,php/mh);$('#hpw').style.display=area>=1?'block':'none';$('#hpf').style.width=(f*100)+'%';$('#hpf').style.background=f<.35?'#e0705c':'#d8dccf';$('#hpt').textContent=`Vida ${Math.max(0,Math.ceil(php))} / ${mh}`+(area===4&&imShield>0?` · escudo ${Math.ceil(imShield)}`:'');
-    $('#vig').style.opacity=area>=1?Math.max(hurtT>0?.75:0,f<.35?.45:0):0}
+    $('#vig').style.opacity=area>=1?Math.max(hurtT>0?.75:0,Math.min(.85,Math.pow(1-f,1.6)*1.1)):0}
   const show=inRange()&&state==='play'&&!(ads&&zoomOf()<20)&&!(deadT>0);$('#cross').style.opacity=show?1:0;
   const g=Math.round(6+spreadOf()*900);cr[0].style.top=(-g-8)+'px';cr[1].style.top=g+'px';cr[2].style.left=(-g-8)+'px';cr[3].style.left=g+'px';$('#hitm').style.opacity=hitT>0?1:0;
   $('#wname').textContent=area===4&&lastDev==='touch'?w.name:w.name+' · '+w.cls;const ms=magSize();$('#ammo').innerHTML=Math.max(0,S.ammo)+`<small> / ${ms}</small>`;$('#ammo').classList.toggle('low',S.ammo<=ms*.25);
@@ -2103,6 +2346,7 @@ function hud(){
   if(state==='menu')p='';
   else if(st)p=`${kk('E','A')} ${st.name}`;
   else if(nd)p=`${kk('E','A')} Coger ${nd.name}`;
+  else if(area===3&&mis.on&&stMap&&stMap.vac&&!mis.suit&&!inAir(px,pz))p='<span class="w">Sin traje: pierdes vida</span> — vuelve al transbordador';
   else if(area===4&&im.on&&im.door&&im.door.t>0)p='Colocando la carga…';
   else if(area===4&&im.on&&im.state==='play'&&imZoneOut({x:px,z:pz}))p='<span class="w">Fuera de la zona</span> — vuelve al centro';
   else if(area===4&&im.on&&im.mode==='sd'&&im.sd.plantT>0)p=`Colocando la bomba<div id="pbar"><i style="width:${Math.min(100,im.sd.plantT/2.5*100)}%"></i></div>`;
@@ -2270,7 +2514,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   if(state!=='pause'){update(dt*k);uiAcc+=dt;if(uiAcc>.06){uiAcc=0;hud();tcHud()}saveAcc+=dt;if(saveAcc>15){saveAcc=0;saveMode()}}render(dt*k)}
 requestAnimationFrame(loop);
 window.G={get S(){return S},set S(v){S=v},update,render,hud,tryFire,keyR,startClean,startReload,buyCal,buyW,buyAtt,buyArm,equip,swapW,buySkill,buyPas,claim,targets,bots,WEAPONS,ATT,ARM,CLS,SK,CH,PAS,CAMOS,COV,skCost,calCost,pasCost,shotDmg,magSize,tArmor,tHP,tReward,fresh,resetRun,medalsFor,
-  chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,killBot,startStory,cineNext,get cine(){return cine},get drops(){return drops},pickDrop,nearDrop,dropWeapon,enemyWeapon,wmOf,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
+  chDone:i=>chDone(CH[i]),pasRate,openMenu,closeMenu,menuBack,menuMove,menuAct,nearStation,interact,killBot,startStory,cineNext,get cine(){return cine},OMAPS,get mis(){return mis},inAir,get drops(){return drops},pickDrop,nearDrop,dropWeapon,enemyWeapon,wmOf,travel,spawnBot,clearBots,flipCoin,bLevel,zone,level,houseOpen,okPos,botOk,segBlocked,mmShow,mmMove,mmAct,mmBack,newGame,pause,save,load,placePlayer,
   get flipT(){return flipT},get gun(){return gun},raw(){renderer.render(scene,camera)},get gst(){return gst},get state(){return state},get area(){return area},get php(){return php},set php(v){php=v},get p(){return{px,pz,yaw,area}},setFX(v){FX=v},play(){if(mode==='menu')mode='sv';started=true;state='play';$('#mm').classList.add('off')},
   pos(x,z,y,p){px=x;pz=z;if(y!==undefined)yaw=y;if(p!==undefined)pitch=p},setArea(a){area=a},setAds(v){kb.ads=v},setModels,loadModels,MODELS,get modelsOn(){return modelsOn},applyGfx,syncSet,get crouch(){return crouch},get hasEnv(){return !!ENV},startSV,startTemp,startInc,toMenu,imStart,imMapSet,STORY,STMAPS,get stIdx(){return stIdx},set stIdx(v){stIdx=v},get stProg(){return stProg},get mis(){return mis},misTick2,imStars,imMult,IM_MS,IM_ACH,imAch,imPrestige,imZoneR,imMech,PERS,IM_BASE,get imDeath2(){return im.tmp},imPick,IM_MAPS,imPreview,playerDown,get deadT(){return deadT},get imShield(){return imShield},imToLobby,lobbyAct,lobbyRender,im,IM_MODES,IM_WEAPONS,IM_HACKS,IMAPS,get incP(){return incP},get imDeath(){return imDeath},get imMap(){return imMap},LOADS,get mode(){return mode},slowMo,banner,get slowT(){return slowT},setNV,mis,ffa,feed,mkBot,misLeft,groundY,AREAS,get dark(){return dark},get sprint(){return sprint},get pgy(){return pgy},setCrouch(v){kb.crouch=v},setTouch,tc,tcHud,jump,get eye(){return eyeH()},padTest(dt){pollPad(dt)},key(c,d){dispatchEvent(new KeyboardEvent(d?'keydown':'keyup',{code:c}))},
   aim(t,off,h){const dx=t.x+(off||0)-px,dy=(h!==undefined?h:t.y)-eyeH(),dz=t.z-pz;yaw=Math.atan2(-dx,-dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));kick=0;bloom=0;moving=0}};
