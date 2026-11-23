@@ -1005,14 +1005,19 @@ const OEN={forest:{fog:0x8ea08a,fn:40,ff:175,sky:0xa9c9a2,hc:0xd6e6cc,hg:0x3a4a2
   estate:{fog:0xa8b8b0,fn:50,ff:220,sky:0xbcd2e6,hc:0xdfe8f0,hg:0x4a5a3a,hi:1,si:2.1,sc:0xfff0d8},
   city:{fog:0x9aa0a6,fn:40,ff:200,sky:0xaeb6c0,hc:0xcfd6de,hg:0x55575a,hi:1,si:1.8,sc:0xf4f0e8},
   fort:{fog:0x8e9298,fn:30,ff:160,sky:0x9aa6b4,hc:0xc8d0d8,hg:0x4a4a44,hi:.95,si:1.7,sc:0xffe8cc},
-  space:{fog:0x000000,fn:140,ff:520,sky:0x000000,stars:1,hc:0x34405a,hg:0x14141c,hi:.6,si:3.5,sc:0xffffff}};
-let envOn=0;
+  space:{earth:1,fog:0x000000,fn:140,ff:520,sky:0x000000,stars:1,hc:0x34405a,hg:0x14141c,hi:.6,si:3.5,sc:0xffffff}};
+let envOn=0,intr=0;
+// momento del día de cada mapa: se mezcla sobre el entorno base (cielo, niebla, luz y posición del sol)
+const TODS={dawn:{sky:0xffc9a0,fog:0xd9b9a0,hc:0xffd9c0,hg:0x4a4040,hi:.8,si:1.5,sc:0xffb070,sun:[-75,14]},dusk:{sky:0xe0885a,fog:0xb08068,hc:0xffc8a8,hg:0x3a3040,hi:.7,si:1.3,sc:0xff8a50,sun:[75,13]},
+  night:{sky:0,fog:0x0a1020,fn:25,ff:130,hc:0x6a80b0,hg:0x10141c,hi:.6,si:.8,sc:0x9ab4ff,sun:[-40,60],stars:1,moon:1},blue:{sky:0x7a98c8,fog:0x93a8c8,hc:0xa0b8e0,hg:0x303848,hi:.8,si:1.0,sc:0xb0c8ff,sun:[-60,11]},noon:{hi:1.15,si:3.4,sun:[-8,70]}};
+// luces de interior: cuatro luces puntuales que siguen a las lámparas más cercanas (número fijo: no recompila materiales)
+const LAMPLS=[0,1,2,3].map(()=>{const l=new THREE.PointLight(0xffe2b8,0,20,1.6);scene.add(l);return l});
 const starsM=new THREE.Group();starsM.visible=false;scene.add(starsM);
 {const n=1100,p=new Float32Array(n*3);for(let i=0;i<n;i++){const u=rnd()*2-1,a=rnd()*PI*2,r=Math.sqrt(1-u*u);p[i*3]=Math.cos(a)*r*340;p[i*3+1]=Math.abs(u)*340*.98+8;p[i*3+2]=Math.sin(a)*r*340}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));starsM.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,fog:false})));
   const eth=ctex(256,(g2,s)=>{g2.fillStyle='#1f4f9a';g2.fillRect(0,0,s,s);for(let i=0;i<40;i++){g2.fillStyle=`rgba(${60+rnd()*40},${130+rnd()*50},70,.85)`;g2.beginPath();g2.ellipse(rnd()*s,rnd()*s,10+rnd()*30,6+rnd()*18,rnd()*3,0,7);g2.fill()}for(let i=0;i<30;i++){g2.fillStyle='rgba(255,255,255,.55)';g2.beginPath();g2.ellipse(rnd()*s,rnd()*s,16+rnd()*34,3+rnd()*7,0,0,7);g2.fill()}}),
     earth=new THREE.Mesh(new THREE.SphereGeometry(60,32,20),new THREE.MeshBasicMaterial({map:eth,fog:false}));earth.position.set(-170,150,-250);starsM.add(earth);
-  const halo=new THREE.Mesh(new THREE.SphereGeometry(64,24,14),new THREE.MeshBasicMaterial({color:0x6fa8ff,transparent:true,opacity:.18,side:THREE.BackSide,fog:false}));halo.position.copy(earth.position);starsM.add(halo)}
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(64,24,14),new THREE.MeshBasicMaterial({color:0x6fa8ff,transparent:true,opacity:.18,side:THREE.BackSide,fog:false}));halo.position.copy(earth.position);starsM.add(halo);const moon=new THREE.Mesh(new THREE.SphereGeometry(14,16,10),new THREE.MeshBasicMaterial({color:0xe8eeff,fog:false}));moon.position.set(130,170,-230);moon.visible=false;starsM.add(moon)}
 const OMAPS={};
 {const LC=s=>{let a=s>>>0;return()=>(a=(Math.imul(a,1664525)+1013904223)>>>0)/4294967296};
   const nt=(base,v,n,px,rx,ex)=>ctex(256,(g,q)=>{g.fillStyle=base;g.fillRect(0,0,q,q);for(let i=0;i<n;i++){const l=rnd()-.5;g.fillStyle=l>0?`rgba(255,255,255,${l*v})`:`rgba(0,0,0,${-l*v})`;g.fillRect(rnd()*q,rnd()*q,px*(1+rnd()*2),px*(1+rnd()))}if(ex)ex(g,q)},rx,rx);
@@ -1028,7 +1033,7 @@ const OMAPS={};
     snowR:mat({color:0xf0f4f8}),tent:mat({color:0x5a6a3a,roughness:1}),tentS:mat({color:0xd8cfae,roughness:1}),bag:mat({color:0x8c7f5a,roughness:1}),water:mat({color:0x2b6a8f,roughness:.15,metalness:.2}),ice:mat({color:0x9fc4dc,roughness:.25,metalness:.1}),
     white:mat({color:0xe4e6e8,roughness:.5,metalness:.3}),panel:mat({color:0x1d3a6a,roughness:.25,metalness:.7}),glow:new THREE.MeshBasicMaterial({color:0x6fe0ff}),red:mat({color:0x8a2a22,roughness:.8}),truck:mat({color:0x4d5638,roughness:.8,metalness:.3}),dark:mat({color:0x23211f,roughness:.8}),
     hedge:mat({color:0x2f5a26,roughness:1}),marble:mat({map:TX.floor(6,6),color:0xd8d4c8,roughness:.3}),carpet:mat({color:0x7a2a2a,roughness:1}),parq:mat({map:TX.wood(6,6),color:0xb08a5a}),plaster:mat({map:TX.conc(3,1),color:0xd8d0bc}),
-    pan:mat({map:TX.wood(3,1),color:0x5a3d28}),stoneW:mat({map:TX.conc(3,1.5),color:0x7a7a74}),fl:mat({map:TX.floor(6,6),color:0x7a7770}),sofa:mat({color:0x4a5a6a,roughness:1}),gold:mat({color:0xc9a13a,metalness:.9,roughness:.3}),lamp:new THREE.MeshBasicMaterial({color:0xfff0c0}),ceilM:new THREE.MeshBasicMaterial({color:0xb4ac9c}),
+    pan:mat({map:TX.wood(3,1),color:0x5a3d28}),stoneW:mat({map:TX.conc(3,1.5),color:0x7a7a74}),fl:mat({map:TX.floor(6,6),color:0x7a7770}),sofa:mat({color:0x4a5a6a,roughness:1}),gold:mat({color:0xc9a13a,metalness:.9,roughness:.3}),lamp:new THREE.MeshBasicMaterial({color:0xfff0c0}),ceilM:mat({color:0xcfc8b8,roughness:1}),doorW:mat({map:TX.wood(1,2),color:0x7a4e2c}),brass:mat({color:0xc9a13a,metalness:.9,roughness:.3}),haz:mat({color:0xd8b020,roughness:.6}),log:mat({map:TX.wood(1,2),color:0x6a5034}),
     cars:[0x8a2a22,0x2a4f7a,0x3a3a3e,0xcfcfcf].map(c=>mat({color:c,roughness:.4,metalness:.5}))};
   const ROCKM={forest:M2.rock,snow:M2.irock,desert:M2.srock,moon:M2.mrock,estate:M2.stoneW,city:M2.conc,fort:M2.stoneW},WALLM=ROCKM;
   const GE={cone:(r,h,s)=>new THREE.ConeGeometry(r,h,s||9),cyl:(a,b,h,s)=>new THREE.CylinderGeometry(a,b,h,s||8),ico:(r,d)=>new THREE.IcosahedronGeometry(r,d||1),dod:r=>new THREE.DodecahedronGeometry(r,0),sph:(r)=>new THREE.SphereGeometry(r,14,8)};
@@ -1056,7 +1061,15 @@ const OMAPS={};
       let sv,sx;if(ringK==='dune'){sv=1.5+R()*1.5;sx=sv*5}else if(ringK==='blockb'){sv=9+R()*14;sx=6+R()*6}else if(ringK==='mrock'||ringK==='rock'){sv=2+R()*3;sx=sv}else{sv=1.1+R()*.7;sx=sv}
       (ins[ringK]=ins[ringK]||[]).push([X(x),Y(z),sv,R()*6,sx])}
     // puertas y líneas divisorias entre zonas
-    const door=(x0,x1,z,m)=>{const dc=rect(x0,x1,z-.3,z+.3,true),mesh=B(x1-x0,3.6,.6,m,(x0+x1)/2,1.8,z);doors.push({c:dc,mesh,x:X((x0+x1)/2),z:Y(z)});kz.push([x0-3,x1+3,z-4.5,z+4.5])};
+    // puertas: marco fijo y hoja(s) que desaparecen al abrirse. Tipos: blast (blindada), wood (doble hoja con paneles), palisade (portón de troncos), ice (bloque helado con barras)
+    const door=(x0,x1,z,kind)=>{const dc=rect(x0,x1,z-.3,z+.3,true),cm=(x0+x1)/2,wd=x1-x0,H=kind==='wood'?3.4:3.6,wallH=kind==='wood'?4.2:H+.35,gp=new THREE.Group(),fr=new THREE.Group();gp.position.set(X(cm),0,Y(z));fr.position.copy(gp.position);scene.add(gp,fr);
+      const Pb=(g,a,h,b,m,x,y,zz)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(a,h,b),m);q.position.set(x,y,zz);q.castShadow=true;g.add(q);return q},fm=kind==='blast'?M2.dark:kind==='ice'?M2.metal:M2.pan;
+      Pb(fr,.4,wallH,.75,fm,-wd/2-.12,wallH/2,0);Pb(fr,.4,wallH,.75,fm,wd/2+.12,wallH/2,0);Pb(fr,wd+.64,wallH-H+.02,.75,fm,0,(wallH+H)/2,0);
+      if(kind==='blast'){Pb(gp,wd,H,.5,M2.metal,0,H/2,0);for(let i=0;i<4;i++)Pb(gp,wd-.1,.26,.54,i%2?M2.dark:M2.haz,0,.5+i*.8,0);const w2=new THREE.Mesh(new THREE.TorusGeometry(.4,.07,8,16),M2.brass);w2.position.set(0,H/2,.3);gp.add(w2);Pb(gp,.1,.8,.08,M2.brass,0,H/2,.3);Pb(gp,.8,.1,.08,M2.brass,0,H/2,.3);for(const sx of[-1,1])for(let i=0;i<5;i++)Pb(gp,.12,.12,.1,M2.dark,sx*(wd/2-.22),.4+i*.7,.3)}
+      else if(kind==='wood'){for(const sx of[-1,1]){const lw=wd/2-.03;Pb(gp,lw,H,.22,M2.doorW,sx*wd/4,H/2,0);Pb(gp,lw-.4,H*.38,.06,M2.pan,sx*wd/4,H*.27,.12);Pb(gp,lw-.4,H*.38,.06,M2.pan,sx*wd/4,H*.73,.12);Pb(gp,.07,.34,.1,M2.brass,sx*.22,1.15,.16)}}
+      else if(kind==='palisade'){const n=Math.max(4,Math.round(wd/.5));for(let i=0;i<n;i++){const x=-wd/2+(i+.5)*wd/n,l=new THREE.Mesh(new THREE.CylinderGeometry(.21,.23,H,8),M2.log);l.position.set(x,H/2,0);l.castShadow=true;gp.add(l);const t=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,8),M2.log);t.position.set(x,H+.2,0);gp.add(t)}Pb(gp,wd,.18,.12,M2.dark,0,.8,.26);Pb(gp,wd,.18,.12,M2.dark,0,2.6,.26)}
+      else{Pb(gp,wd,H,.5,M2.ice,0,H/2,0);for(let i=0;i<4;i++)Pb(gp,.1,H,.1,M2.metal,-wd/2+(i+.5)*wd/4,H/2,.32);Pb(gp,wd,.1,.1,M2.metal,0,1,.32);Pb(gp,wd,.1,.1,M2.metal,0,2.6,.32)}
+      doors.push({c:dc,mesh:gp,x:X(cm),z:Y(z)});kz.push([x0-3,x1+3,z-4.5,z+4.5])};
     const seg=(x0,x1,z,st)=>{const S=STY[st];if(st==='water'){B(x1-x0,.06,S.t,M2.water,(x0+x1)/2,.07,z,1);rect(x0,x1,z-S.t/2,z+S.t/2,false);return}
       const m=st==='cliff'?rk:st==='wood'?M2.wood:st==='ice'?M2.ice:st==='hedge'?M2.hedge:st==='wall'?(o.wm||M2.plaster):M2.metal;for(let a=x0;a<x1-.01;){const b=Math.min(x1,a+5+R()*4),h=S.h[0]+R()*(S.h[1]-S.h[0]);B(b-a,h,S.t,m,(a+b)/2,h/2,z);rect(a,b,z-S.t/2,z+S.t/2,true);a=b}};
     const Ls=(o.lines||[]).map(L=>L.z),zs=[hd,...Ls,-hd];
@@ -1064,9 +1077,9 @@ const OMAPS={};
       B(12,.3,16,M2.white,x,.18,z);for(const sx of[-1,1])B(.4,3.4,16,M2.white,x+sx*6,1.7,z);B(12,.4,16,M2.white,x,3.5,z);B(12.4,3.8,.5,M2.white,x,1.9,z+8);B(5,3.4,.4,M2.white,x-3.5,1.7,z-8);B(5,3.4,.4,M2.white,x+3.5,1.7,z-8);
       rect(x-6.2,x-5.8,z-8,z+8);rect(x+5.8,x+6.2,z-8,z+8);rect(x-6.2,x+6.2,z+7.8,z+8.2);rect(x-6,x-1,z-8.2,z-7.8);rect(x+1,x+6,z-8.2,z-7.8);
       for(const sx of[-1,1])B(10,.25,3,M2.white,x+sx*10.5,1,z+1);B(2.4,2.4,3,M2.dark,x-3,1.5,z+5);B(2.4,2.4,3,M2.dark,x+3,1.5,z+5);for(let i=0;i<3;i++)B(.2,.2,.2,M2.glow,x-1+i,2.2,z+7.7);
-      door(x-1,x+1,z-8,M2.metal);air.push([X(x-5.8),X(x+5.8),Y(z-8),Y(z+8)]);kz.push([x-8,x+8,z-10,z+10])}
+      door(x-1,x+1,z-8,'blast');air.push([X(x-5.8),X(x+5.8),Y(z-8),Y(z+8)]);kz.push([x-8,x+8,z-10,z+10])}
     (o.lines||[]).forEach((L,i)=>{if(o.shuttle&&i===0)return;const g0=L.g[0],g1=L.g[1],z=L.z;seg(-hw,g0,z,L.st);seg(g1,hw,z,L.st);
-      if(L.st==='water'){B(g1-g0,.16,S6(),M2.wood,(g0+g1)/2,.12,z,1)}door(g0,g1,z,L.blind||L.st==='bulk'?M2.metal:L.st==='ice'?M2.ice:M2.wood)});
+      if(L.st==='water'){B(g1-g0,.16,S6(),M2.wood,(g0+g1)/2,.12,z,1)}door(g0,g1,z,L.blind||L.st==='bulk'?'blast':L.st==='ice'?'ice':L.st==='wall'||L.st==='hedge'?'wood':'palisade')});
     function S6(){return STY.water.t+.5}
     kz.push([-5,5,hd-12,hd-3]);
     // piezas
@@ -1074,7 +1087,7 @@ const OMAPS={};
       dune:(x,z,s)=>{(ins.dune=ins.dune||[]).push([X(x),Y(z),1.2+R()*.8,R()*6,5+R()*5])},
       cabin:(x,z,a,b,wm,rm,ar)=>{const t=.4,dw=2.8;kz.push([x-a/2-1,x+a/2+1,z-b/2-1,z+b/2+1]);B(a,3,t,wm,x,1.5,z-b/2);B(t,3,b,wm,x-a/2,1.5,z);B(t,3,b,wm,x+a/2,1.5,z);B((a-dw)/2,3,t,wm,x-(a+dw)/4,1.5,z+b/2);B((a-dw)/2,3,t,wm,x+(a+dw)/4,1.5,z+b/2);B(a+.7,.3,b+.7,rm,x,3.15,z);
         rect(x-a/2,x+a/2,z-b/2-t/2,z-b/2+t/2);rect(x-a/2-t/2,x-a/2+t/2,z-b/2,z+b/2);rect(x+a/2-t/2,x+a/2+t/2,z-b/2,z+b/2);rect(x-a/2,x-dw/2,z+b/2-t/2,z+b/2+t/2);rect(x+dw/2,x+a/2,z+b/2-t/2,z+b/2+t/2);
-        if(a>8)SP.crates(x-a/2+2,z-b/2+1.4);if(ar)air.push([X(x-a/2),X(x+a/2),Y(z-b/2),Y(z+b/2)])},
+        ints.push([X(x-a/2),X(x+a/2),Y(z-b/2),Y(z+b/2)]);lampAt(x,2.5,z);if(a>8)SP.crates(x-a/2+2,z-b/2+1.4);if(ar)air.push([X(x-a/2),X(x+a/2),Y(z-b/2),Y(z+b/2)])},
       sandbags:(x,z,len)=>{B(len,1.05,.8,M2.bag,x,.525,z);rect(x-len/2,x+len/2,z-.4,z+.4,false)},
       crates:(x,z)=>{B(1.1,1,1.1,M2.wood,x,.5,z);B(1,.9,1,M2.wood,x+1.1,.45,z+.3);rect(x-.55,x+1.6,z-.55,z+.8,false)},
       barrels:(x,z)=>{for(let i=0;i<3;i++){const c=new THREE.Mesh(GE.cyl(.42,.42,1,12),i===1?M2.red:M2.truck);c.position.set(X(x+i*.9),.5,Y(z+(i%2)*.5));c.castShadow=true;scene.add(c)}rect(x-.5,x+2.3,z-.5,z+1,false)},
@@ -1101,12 +1114,13 @@ const OMAPS={};
       round:(x,z,r,h,m)=>{const c=new THREE.Mesh(GE.cyl(r,r,h,18),m||M2.stoneW);c.position.set(X(x),h/2,Y(z));c.castShadow=c.receiveShadow=true;scene.add(c);blk(x,z,r)},
       mass:(x0,x1,z0,z1,h,m)=>{B(x1-x0,h,z1-z0,m,(x0+x1)/2,h/2,(z0+z1)/2);rect(x0,x1,z0,z1,true)},
       throne:(x,z)=>{B(8,.6,5,M2.stoneW,x,.3,z);B(1.4,.5,1.2,M2.gold,x,.85,z);B(1.6,2.7,.26,M2.gold,x,1.95,z-.7);B(.2,.7,1.1,M2.gold,x-.7,1.2,z);B(.2,.7,1.1,M2.gold,x+.7,1.2,z);rect(x-4,x+4,z-2.5,z+2.5,false)}});
+    const lamps=[],ints=[],lampAt=(x,y,z)=>{lamps.push([X(x),y,Y(z)])};
     const wallH=(x0,x1,z,m,h)=>{B(x1-x0,h,.6,m,(x0+x1)/2,h/2,z);rect(x0,x1,z-.3,z+.3,true)},wallV=(x,z0,z1,m,h)=>{B(.6,h,z1-z0,m,x,h/2,(z0+z1)/2);rect(x-.3,x+.3,z0,z1,true)};
     // interior: suelo, techo, tabiques con huecos abiertos y lámparas
-    const interior=(k,io)=>{const[zt,zb]=band(k),dep=zt-zb,zc=(zt+zb)/2,h=io.h||4.4,wm=io.wall;B(w,.06,dep,io.floor,0,.07,zc,1);B(w,.3,dep,io.ceil||M2.ceilM,0,h+.15,zc,1);
+    const interior=(k,io)=>{const[zt,zb]=band(k),dep=zt-zb,zc=(zt+zb)/2,h=io.h||4.4,wm=io.wall;ints.push([X(-hw),X(hw),Y(zb),Y(zt)]);B(w,.06,dep,io.floor,0,.07,zc,1);B(w,.3,dep,io.ceil||M2.ceilM,0,h+.15,zc,1);
       for(const p of io.parts||[]){const z=zb+p.z*dep;let a=-hw;for(const g of p.gaps.concat([[hw,hw]]).sort((u,v)=>u[0]-v[0])){if(g[0]-a>.4)wallH(a,g[0],z,wm,h);a=g[1];if(g[1]<hw)kz.push([g[0]-1.5,g[1]+1.5,z-3,z+3])}}
       for(const v of io.vparts||[]){const z0=zb+v.z0*dep,z1=zb+v.z1*dep,L=z1-z0,g0=z0+v.gap[0]*L,g1=z0+v.gap[1]*L;wallV(v.x,z0,g0,wm,h);wallV(v.x,g1,z1,wm,h);kz.push([v.x-3,v.x+3,g0-1.5,g1+1.5])}
-      for(let i=0;i<Math.floor(w/14);i++)for(let j=0;j<Math.max(1,Math.floor(dep/14));j++){const l=new THREE.Mesh(GE.sph(.22),M2.lamp);l.position.set(X(-hw+7+i*14),h-.15,Y(zb+7+j*14));scene.add(l)}};
+      for(let i=0;i<Math.floor(w/14);i++)for(let j=0;j<Math.max(1,Math.floor(dep/14));j++){const l=new THREE.Mesh(GE.sph(.22),M2.lamp);l.position.set(X(-hw+7+i*14),h-.15,Y(zb+7+j*14));scene.add(l);lampAt(-hw+7+i*14,h-.6,zb+7+j*14)}};
     o.build({SP,put,rect,blk,B,hit,kz,X,Y,R,hw,hd,zs,band,M2,th,add,air,door,interior,wallH,wallV});
     // contra todos: puntos de aparición dentro de la forma y vegetación decorativa fuera de ella
     let spawns=[];if(o.ffa){const sp=[];for(let t=0;t<4000&&sp.length<14;t++){const x=-hw+3+R()*(w-6),z=-hd+3+R()*(d-6);if(o.inside(x,z)&&!hit(x,z,1.4)&&sp.every(p=>Math.hypot(p[0]-x,p[1]-z)>13))sp.push([x,z])}spawns=sp.map(p=>[X(p[0]),Y(p[1])]);
@@ -1122,9 +1136,9 @@ const OMAPS={};
     const bf=(x,z,sec,hv,hold,boss)=>{foes.push([x,z,sec,hold,hv?1:0,boss?1:0])};
     if(o.foes)o.foes({fg,bf,foes,hit,band});
     const cc=cov.length;
-    return OMAPS[id]=STMAPS[id]={id,cx,Z,w,d,cov,doors,rects:[[cx-hw,cx+hw,Z-hd,Z+hd]],b:[cx-hw+.4,cx+hw-.4,Z-hd+.4,Z+hd-.4],spawn:o.spawn,foes,env:th==='moon'?'space':th,vac:space&&!o.ffa,grav:space&&!o.ffa,air,suit:null,nCov:cc,name:o.name||id,spawns}};
+    return OMAPS[id]=STMAPS[id]={id,cx,Z,w,d,cov,doors,rects:[[cx-hw,cx+hw,Z-hd,Z+hd]],b:[cx-hw+.4,cx+hw-.4,Z-hd+.4,Z+hd-.4],spawn:o.spawn,foes,env:th==='moon'?'space':th,vac:space&&!o.ffa,grav:space&&!o.ffa,air,suit:null,nCov:cc,name:o.name||id,spawns,lamps,ints,tod:o.tod||null}};
   // ---- bosque: campamento → río → cresta → aserradero → bosque profundo → pabellón de caza ----
-  omap('bosque',-1200,-100,76,190,{th:'forest',seed:11,spawn:[0,88],
+  omap('bosque',-1200,-100,76,190,{th:'forest',tod:'dawn',seed:11,spawn:[0,88],
     lines:[{z:64,g:[-8,0],st:'wood'},{z:36,g:[-2,6],st:'water'},{z:8,g:[8,16],st:'cliff'},{z:-20,g:[-14,-6],st:'cliff',blind:1},{z:-52,g:[-3,5],st:'cliff'}],
     build:P=>{const{put,SP,M2}=P,cab={a:7,b:5.5,wm:M2.wood,rm:M2.plank};
       put(0,'tent',4,null,3.4);put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'pine',22,{s:[.9,1.4]});put(0,'oak',8,{s:[.9,1.3]});put(0,'rock',5,{s:[.8,1.4]});put(0,'barrels',2,null,2);
@@ -1135,7 +1149,7 @@ const OMAPS={};
       SP.cabin(0,-82,24,14,M2.plank,M2.wood);put(5,'pine',22,{s:[1,1.6]},3.2);put(5,'rock',8,{s:[.9,1.5]});put(5,'sandbags',4,{len:5},2.2)},
     foes:({fg,bf})=>{fg(0,0,6,0,.5);fg(1,1,10,1,.5);fg(2,2,11,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,7,2,.3);bf(0,-86,6,1,1,1);bf(-5,-80,6,0,1);bf(5,-80,6,0,1);bf(-9,-79,6,1,1);bf(9,-79,6,1,1)}});
   // ---- nieve: puesto avanzado → cresta helada → campo de camiones → búnker → torreta → fortín ----
-  omap('nieve',-1600,-100,80,190,{th:'snow',seed:23,wh:9,spawn:[0,88],
+  omap('nieve',-1600,-100,80,190,{th:'snow',tod:'blue',seed:23,wh:9,spawn:[0,88],
     lines:[{z:64,g:[-4,4],st:'ice'},{z:34,g:[-12,-4],st:'cliff'},{z:4,g:[6,14],st:'ice'},{z:-26,g:[-4,4],st:'cliff',blind:1},{z:-56,g:[-8,0],st:'ice'}],
     build:P=>{const{put,SP,M2}=P;
       put(0,'dome',4,null,4.4);put(0,'tent',3,null,3.4);put(0,'crates',3,null,2);put(0,'spine',24,{s:[.9,1.4]});put(0,'rock',6,{s:[.8,1.4]});put(0,'barrels',2,null,2);
@@ -1146,7 +1160,7 @@ const OMAPS={};
       SP.cabin(0,-84,26,15,M2.conc,M2.snowR);put(5,'spine',14,{s:[1,1.6]},3.2);put(5,'rock',9,{s:[.9,1.6]});put(5,'sandbags',4,{len:5},2.2)},
     foes:({fg,bf})=>{fg(0,0,7,0,.5);fg(1,1,10,1,.5);fg(2,2,12,2,.4);fg(3,3,12,2,.4);fg(4,5,12,3,.3);fg(5,6,6,2,.3);bf(0,-88,6,1,1,1);bf(-6,-80,6,0,1);bf(6,-80,6,0,1);bf(-10,-79,6,1,1);bf(10,-79,6,1,1)}});
   // ---- desierto: oasis → aldea → cantera de ruinas → convoy → fuerte → palacio ----
-  omap('desierto',-2000,-100,84,190,{th:'desert',seed:37,wh:8,spawn:[0,88],
+  omap('desierto',-2000,-100,84,190,{th:'desert',tod:'noon',seed:37,wh:8,spawn:[0,88],
     lines:[{z:64,g:[4,12],st:'cliff'},{z:34,g:[-10,-2],st:'wood'},{z:4,g:[-4,4],st:'cliff'},{z:-26,g:[8,16],st:'cliff',blind:1},{z:-56,g:[-4,4],st:'cliff'}],
     build:P=>{const{put,SP,M2}=P;
       put(0,'tent',4,null,3.4);put(0,'cactus',14,{s:[.9,1.4]});put(0,'rock',6,{s:[.8,1.4]});put(0,'dune',4,null,4);put(0,'crates',3,null,2);put(0,'barrels',2,null,2);
@@ -1172,7 +1186,7 @@ const OMAPS={};
     build:P=>{const{put,SP}=P;ring(P,circ(28.4,26),2.3,'mrock');for(let i=0;i<5;i++){const a=i/5*PI*2+.4;P.add('mrock',Math.cos(a)*9,Math.sin(a)*9,1.7,a);P.add('mrock',Math.cos(a+.3)*9.6,Math.sin(a+.3)*9.6,1.3,a)}
       put(0,'crater',6,{r:[3,6]},0);put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'dish',1,null,3);put(0,'panel',1,null,6);put(0,'rock',12,{s:[.9,1.7]});put(0,'antenna',1,null,3)}});
   // ---- misión 1: la mansión (entrada → jardín → salón → jardín trasero → ala presidencial → despacho) ----
-  omap('mansion',-4400,-100,84,170,{th:'estate',seed:61,wh:8,spawn:[0,81],
+  omap('mansion',-4400,-100,84,170,{th:'estate',tod:'night',seed:61,wh:8,spawn:[0,81],
     lines:[{z:58,g:[-5,3],st:'wood'},{z:30,g:[-3,3],st:'wall'},{z:4,g:[6,12],st:'wall'},{z:-24,g:[-14,-6],st:'wall',blind:1},{z:-54,g:[-3,5],st:'wall'}],
     build:P=>{const{put,SP,M2,interior}=P;
       put(0,'car',4,null,3.4);put(0,'hedgew',3,{len:6},2.2);put(0,'oak',8,{s:[.9,1.3]});put(0,'cabin',2,{a:6,b:5,wm:M2.plaster,rm:M2.plank},4);put(0,'sandbags',2,{len:5},2.2);
@@ -1185,7 +1199,7 @@ const OMAPS={};
       interior(5,{floor:M2.carpet,wall:M2.pan,parts:[{z:.6,gaps:[[-7,7]]}]});SP.desk(0,-79);put(5,'shelf',4,null,2.2);put(5,'sofa',2,null,2.6);put(5,'column',2,null,2.8)},
     foes:({fg,bf})=>{fg(0,0,6,0,.5);fg(1,1,9,1,.5);fg(2,2,10,1,.4);fg(3,3,9,2,.4);fg(4,5,10,2,.4);bf(0,-82.5,6,1,1,1);bf(-5,-75,6,0,1);bf(5,-75,6,0,1);bf(-10,-72,6,1,1);bf(10,-72,6,1,1);bf(-13,-79,6,0,1);bf(13,-79,6,0,1)}});
   // ---- misión 2: la cumbre (calle → plaza → vestíbulo → auditorio → azotea → sala VIP) ----
-  omap('cumbre2',-4800,-100,96,170,{th:'city',seed:67,wh:9,spawn:[0,81],wm:M2.conc,
+  omap('cumbre2',-4800,-100,96,170,{th:'city',tod:'dusk',seed:67,wh:9,spawn:[0,81],wm:M2.conc,
     lines:[{z:60,g:[-6,2],st:'wall'},{z:32,g:[-3,5],st:'wall'},{z:4,g:[-12,-4],st:'wall'},{z:-24,g:[6,14],st:'bulk',blind:1},{z:-54,g:[-5,3],st:'wall'}],
     build:P=>{const{put,SP,M2,interior}=P;
       SP.mass(-48,-24,62,85,14,M2.conc);SP.mass(26,48,62,85,12,M2.conc);SP.mass(-48,-36,40,58,10,M2.conc);SP.mass(36,48,36,58,10,M2.conc);
@@ -1197,7 +1211,7 @@ const OMAPS={};
       interior(5,{floor:M2.carpet,wall:M2.pan,parts:[{z:.55,gaps:[[-8,8]]}]});SP.desk(0,-79);put(5,'table',3,null,2.4);put(5,'sofa',3,null,2.6);put(5,'shelf',3,null,2.2);put(5,'column',2,null,2.8)},
     foes:({fg,bf})=>{fg(0,0,7,0,.5);fg(1,1,9,1,.5);fg(2,2,10,1,.4);fg(3,3,11,2,.4);fg(4,5,10,2,.4);bf(0,-82.5,6,1,1,1);bf(-5,-75,6,0,1);bf(5,-75,6,0,1);bf(-10,-72,6,1,1);bf(10,-72,6,1,1);bf(-13,-76,6,0,1);bf(13,-76,6,0,1)}});
   // ---- misión 3: la fortaleza (foso → patio exterior → armería → patio de armas → gran salón → sala del trono) ----
-  omap('fortaleza2',-5200,-100,90,180,{th:'fort',seed:71,wh:9,spawn:[0,86],wm:M2.stoneW,
+  omap('fortaleza2',-5200,-100,90,180,{th:'fort',tod:'dawn',seed:71,wh:9,spawn:[0,86],wm:M2.stoneW,
     lines:[{z:62,g:[-3,5],st:'water'},{z:34,g:[6,14],st:'wall'},{z:6,g:[-4,4],st:'wall'},{z:-24,g:[-14,-6],st:'wall',blind:1},{z:-54,g:[-3,5],st:'wall'}],
     build:P=>{const{put,SP,M2,interior}=P;
       put(0,'tent',4,null,3.4);put(0,'pine',12,{s:[.9,1.3]});put(0,'rock',8,{s:[.8,1.5]});put(0,'crates',3,null,2);put(0,'sandbags',3,{len:5},2.2);put(0,'barrels',2,null,2);
@@ -1658,7 +1672,7 @@ const FFA_N=['Tú','Lobo','Cuervo','Víbora','Toro','Halcón','Zorro','Tejón','
 function ffaSpawn(id){const q=spawnPt(10);mkBot({team:10+id,id,x:q[0],z:q[1],name:FFA_N[id],mat:BM.ffa[id-1],wi:pickOf(POOLS.mp)})}
 let ffaMap=null,FFA0=null,ffaForce=-1;
 // cada partida se juega en un mapa al azar: el puerto de contenedores o una de las cuatro variantes irregulares
-function ffaPick(){if(!FFA0)FFA0={rects:AREAS[2].rects,cov:AREAS[2].cov,b:AREAS[2].b,spawns:AREAS[2].spawns};const l=[null,OMAPS.ffa_claro,OMAPS.ffa_aldea,OMAPS.ffa_cantera,OMAPS.ffa_crater],M=l[ffaForce>=0?ffaForce:Math.floor(rnd()*l.length)];ffaMap=M;
+function ffaPick(){for(const m of[OMAPS.ffa_claro,OMAPS.ffa_aldea,OMAPS.ffa_cantera,OMAPS.ffa_crater]){m.tod=m.env==='space'?null:[null,'dawn','dusk'][Math.floor(rnd()*3)];m.EE=null}if(!FFA0)FFA0={rects:AREAS[2].rects,cov:AREAS[2].cov,b:AREAS[2].b,spawns:AREAS[2].spawns};const l=[null,OMAPS.ffa_claro,OMAPS.ffa_aldea,OMAPS.ffa_cantera,OMAPS.ffa_crater],M=l[ffaForce>=0?ffaForce:Math.floor(rnd()*l.length)];ffaMap=M;
   Object.assign(AREAS[2],M?{rects:M.rects,cov:M.cov,b:M.b,spawns:M.spawns}:FFA0);return M}
 function ffaStart(){const FM=ffaPick();ffa.on=true;ffa.endT=0;ffa.sc=FFA_N.map(n=>({n,k:0,d:0}));const q=spawnPt(0);px=q[0];pz=q[1];for(let i=1;i<10;i++)ffaSpawn(i);note('Contra todos · '+(FM?FM.name:'Puerto'),`Diez tiradores, cada uno por su cuenta. Todos con 50 de vida y sin blindaje; el daño de las armas está nivelado. Gana el primero que llegue a ${FFA_GOAL} bajas`)}
 function ffaScore(k,v){if(!ffa.on||ffa.endT>0)return;ffa.sc[k].k++;if(v!==undefined)ffa.sc[v].d++;if(ffa.sc[k].k<FFA_GOAL)return;
@@ -1702,7 +1716,7 @@ const SP_N='Netanyahu',SP_T='Trump';
 const A3={rects:AREAS[3].rects,cov:AREAS[3].cov,b:AREAS[3].b};   // la mansión (misión 1); las misiones 2 y 3 cambian AREAS[3] al empezar
 // intro: [quién, texto] (quién = null → texto de situación) · stages: etapas de las misiones nuevas
 const STORY=[
- {t:'Misión 1 · La mansión',weapon:6,cine:0,waves:{1:1,2:1,3:1,5:1},d:'Objetivo: presidente Valcárcel · 7 etapas',map:'mansion',start:'Entrada, jardín, salón, piscina y ala presidencial. El despacho del presidente está al fondo.',boss:'Presidente Valcárcel',win:'El presidente Valcárcel ha caído',
+ {t:'Misión 1 · La mansión',weapon:6,cine:0,waves:{1:1,2:1,3:1,5:1},d:'Objetivo: presidente Valcárcel · 7 etapas',map:'mansion',start:'Es de noche: activa la visión nocturna con N si te hace falta. Entrada, jardín, salón, piscina y ala presidencial; el despacho está al fondo.',boss:'Presidente Valcárcel',win:'El presidente Valcárcel ha caído',
   intro:[[null,'Madrid · 03:40 · línea cifrada'],
    [SP_N,'¡Hay que acabar con él, es un peligro para el estado español!'],
    [SP_T,'Si, sin ninguna duda. Nos quiere joder nuestros planes de hacernos con el poder y despellejarnos los cimbreles.'],
@@ -2379,8 +2393,11 @@ function render(dt){
   // dentro de la mansión no hay luz: casi negro sin visión nocturna
   {const inH=area===3&&pz<-14.3&&Math.abs(px-MX)<14.6;dark+=((inH?1:0)-dark)*Math.min(1,dt*3);const q=dark;hemiL.intensity=1-q*(nv?.2:.975);sun.intensity=2.3*(1-q);for(const f of fillL)f.intensity=1.1*(1-q)+(nv?.6*q:0);
     renderer.toneMappingExposure=1.05+(nv?.45:0);{const ge=dark>.5?.05:1;if(ge!==gunEnv){gunEnv=ge;gun.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial)o.material.envMapIntensity=ge})}}scene.fog.color.setRGB(.576*(1-q*.95),.647*(1-q*.95),.678*(1-q*.95))}
-  {const E=state!=='cine'&&((area===3&&stMap&&OEN[stMap.env])||(area===2&&ffaMap&&OEN[ffaMap.env]));if(E){envOn=1;scene.fog.color.setHex(E.fog);scene.fog.near=E.fn;scene.fog.far=E.ff;skyM.visible=!E.stars;skyM.material.color.setHex(E.stars?0:E.sky);starsM.visible=!!E.stars;starsM.position.copy(skyM.position);hemiL.color.setHex(E.hc);hemiL.groundColor.setHex(E.hg);hemiL.intensity*=E.hi;sun.color.setHex(E.sc);sun.intensity*=E.si/2.3}
+  {const mp=state!=='cine'&&(area===3&&stMap&&OEN[stMap.env]?stMap:area===2&&ffaMap&&OEN[ffaMap.env]?ffaMap:null),E=mp&&(mp.EE||(mp.EE=Object.assign({},OEN[mp.env],TODS[mp.tod]||null)));if(E){envOn=1;scene.fog.color.setHex(E.fog);scene.fog.near=E.fn;scene.fog.far=E.ff;skyM.visible=!E.stars;skyM.material.color.setHex(E.stars?0:E.sky);starsM.visible=!!E.stars;starsM.position.copy(skyM.position);hemiL.color.setHex(E.hc);hemiL.groundColor.setHex(E.hg);hemiL.intensity*=E.hi;sun.color.setHex(E.sc);sun.intensity*=E.si/2.3;if(E.sun)sun.position.set(sun.target.position.x+E.sun[0],E.sun[1],sun.target.position.z);if(starsM.children[3]){starsM.children[1].visible=starsM.children[2].visible=!!E.earth;starsM.children[3].visible=!!E.moon}}
     else if(envOn){envOn=0;scene.fog.near=60;scene.fog.far=250;skyM.visible=true;skyM.material.color.setHex(0xffffff);starsM.visible=false;hemiL.color.setHex(0xcfdcec);hemiL.groundColor.setHex(0x6b6048);sun.color.setHex(0xfff0d8)}}
+  // interiores: menos luz ambiente y lámparas puntuales cercanas
+  {const M=state!=='cine'&&area===3&&stMap?stMap:null,ii=M&&M.ints.some(inR(px,pz))?1:0;intr+=(ii-intr)*Math.min(1,dt*4);hemiL.intensity*=1-.55*intr;sun.intensity*=1-.85*intr;
+    if(M&&M.lamps.length){const near=M.lamps.map(l=>[(l[0]-px)**2+(l[2]-pz)**2,l]).filter(q=>q[0]<900).sort((a,b)=>a[0]-b[0]);LAMPLS.forEach((L,i)=>{const q=near[i];if(q){L.position.set(q[1][0],q[1][1],q[1][2]);L.intensity=34}else L.intensity=0})}else for(const L of LAMPLS)L.intensity=0}
   const low=!inRange()||state==='menu'||sprint>.5;
   const U=gun.userData,sc=ads&&zm<20&&fov<zm+14;if(sc!==scopeOn){scopeOn=sc;$('#scope').style.display=sc?'block':'none'}gun.visible=!sc&&!lobby&&!dc&&state!=='cine';
   let gx=ads?0:.16,gy=ads?-U.sy:-.16,gz=(ads?U.az:U.hz)+gunZ,rx=gunZ*1.2,ry=0,rz=0;
